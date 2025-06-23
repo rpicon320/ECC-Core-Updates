@@ -13,8 +13,8 @@ import AssessmentForm from './components/assessment/AssessmentForm';
 import Profile from './components/Profile';
 import Admin from './components/Admin';
 
-// ✅ Import ONLY HomePage from ECCResource
-import { HomePage } from './modules/ECCResource';
+// ✅ Import ONLY HomePage from ECCResource - Fixed casing
+import { HomePage } from './Modules/ECCResource';
 
 function AppRoutes() {
   return (
