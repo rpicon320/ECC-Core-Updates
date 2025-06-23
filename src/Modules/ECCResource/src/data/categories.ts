@@ -226,6 +226,12 @@ export const getAllCategories = () => {
   return [...RESOURCE_CATEGORIES, ...getCustomCategories()];
 };
 
+// ✅ Get main categories (top-level category names)
+export const getMainCategories = () => {
+  const hierarchy = getCategoryHierarchy();
+  return Object.keys(hierarchy);
+};
+
 // ✅ Get category hierarchy including custom categories
 export const getCategoryHierarchy = () => {
   const customCategories = getCustomCategories();
