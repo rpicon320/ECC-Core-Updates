@@ -202,4 +202,43 @@ export const CATEGORY_HIERARCHY: Record<string, readonly string[]> = {
 } as const;
 
 // ✅ User-added custom categories
-export const getCustomCategories = (): str
+export const getCustomCategories = (): string[] => {
+  const stored = localStorage.getItem('customCategories');
+  return stored ? JSON.parse(stored) : [];
+};
+
+export const addCustomCategory = (category: string): void => {
+  const existing = getCustomCategories();
+  if (!existing.includes(category)) {
+    const updated = [...existing, category];
+    localStorage.setItem('customCategories', JSON.stringify(updated));
+  }
+};
+
+export const removeCustomCategory = (category: string): void => {
+  const existing = getCustomCategories();
+  const updated = existing.filter(cat => cat !== category);
+  localStorage.setItem('customCategories', JSON.stringify(updated));
+};
+
+// ✅ Get all categories (predefined + custom)
+export const getAllCategories = (): string[] => {
+  return [...RESOURCE_CATEGORIES, ...getCustomCategories()];
+};
+
+// ✅ Get category hierarchy including custom categories
+export const getCategoryHierarchy = (): Record<string, string[]> => {
+  const customCategories = getCustomCategories();
+  const hierarchy = { ...CATEGORY_HIERARCHY };
+  
+  if (customCategories.length > 0) {
+    hierarchy['Custom Categories'] = customCategories;
+  }
+  
+  return hierarchy;
+};
+
+// ✅ Check if a category is custom
+export const isCustomCategory = (category: string): boolean => {
+  return getCustomCategories().includes(category);
+};
