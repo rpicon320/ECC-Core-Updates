@@ -13,8 +13,8 @@ import AssessmentForm from './components/assessment/AssessmentForm';
 import Profile from './components/Profile';
 import Admin from './components/Admin';
 
-// ✅ Import ONLY HomePage from ECCResource
-import { HomePage } from './Modules/ECCResource';
+// ✅ Import the ECCResource App component which includes its own AuthProvider
+import { App as ECCResourceApp } from './Modules/ECCResource';
 
 function AppRoutes() {
   return (
@@ -48,8 +48,8 @@ function AppRoutes() {
         <Route path="assessments/new" element={<AssessmentForm />} />
         <Route path="assessments/:id" element={<AssessmentForm />} />
 
-        {/* ✅ ONLY Resource Directory - no Service Types */}
-        <Route path="resources" element={<HomePage />} />
+        {/* ✅ Use ECCResource App component with its own AuthProvider */}
+        <Route path="resources" element={<ECCResourceApp />} />
 
         <Route path="profile" element={<Profile />} />
         <Route

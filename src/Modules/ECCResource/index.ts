@@ -1,5 +1,6 @@
 // src/modules/ECCResource/index.ts
 
+export { default as App } from './src/App';
 export { default as AuthWrapper } from './src/components/AuthWrapper';
 export { default as CSVImporter } from './src/components/CSVImporter';
 export { default as ECCFavoriteStar } from './src/components/ECCFavoriteStar';
