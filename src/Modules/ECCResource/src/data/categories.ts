@@ -202,12 +202,12 @@ export const CATEGORY_HIERARCHY: Record<string, readonly string[]> = {
 } as const;
 
 // ✅ User-added custom categories
-export const getCustomCategories = (): string[] => {
+export const getCustomCategories = () => {
   const stored = localStorage.getItem('customCategories');
   return stored ? JSON.parse(stored) : [];
 };
 
-export const addCustomCategory = (category: string): void => {
+export const addCustomCategory = (category: string) => {
   const existing = getCustomCategories();
   if (!existing.includes(category)) {
     const updated = [...existing, category];
@@ -215,19 +215,19 @@ export const addCustomCategory = (category: string): void => {
   }
 };
 
-export const removeCustomCategory = (category: string): void => {
+export const removeCustomCategory = (category: string) => {
   const existing = getCustomCategories();
   const updated = existing.filter(cat => cat !== category);
   localStorage.setItem('customCategories', JSON.stringify(updated));
 };
 
 // ✅ Get all categories (predefined + custom)
-export const getAllCategories = (): string[] => {
+export const getAllCategories = () => {
   return [...RESOURCE_CATEGORIES, ...getCustomCategories()];
 };
 
 // ✅ Get category hierarchy including custom categories
-export const getCategoryHierarchy = (): Record<string, string[]> => {
+export const getCategoryHierarchy = () => {
   const customCategories = getCustomCategories();
   const hierarchy = { ...CATEGORY_HIERARCHY };
   
