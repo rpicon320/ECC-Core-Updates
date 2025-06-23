@@ -8,12 +8,13 @@ import Login from './components/Login';
 import EmailVerification from './components/EmailVerification';
 import ClientPortal from './components/ClientPortal';
 import Clients from './components/Clients';
-import Assessments from './components/Assessments';
-import AssessmentForm from './components/assessment/AssessmentForm';
 import Profile from './components/Profile';
 import Admin from './components/Admin';
 
-// ✅ Import the ECCResource App component which includes its own AuthProvider
+// Import Assessment Module
+import AssessmentModule from './Modules/AssessmentModule';
+
+// Import ECCResource App component which includes its own AuthProvider
 import { App as ECCResourceApp } from './Modules/ECCResource';
 
 function AppRoutes() {
@@ -44,11 +45,11 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/clients" replace />} />
         <Route path="clients" element={<Clients />} />
-        <Route path="assessments" element={<Assessments />} />
-        <Route path="assessments/new" element={<AssessmentForm />} />
-        <Route path="assessments/:id" element={<AssessmentForm />} />
+        
+        {/* Assessment Module Routes */}
+        <Route path="assessments/*" element={<AssessmentModule />} />
 
-        {/* ✅ Use ECCResource App component with its own AuthProvider */}
+        {/* ECCResource App component with its own AuthProvider */}
         <Route path="resources" element={<ECCResourceApp />} />
 
         <Route path="profile" element={<Profile />} />
