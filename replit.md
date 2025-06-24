@@ -27,6 +27,12 @@ This is a client management application with authentication, assessment modules,
   - Created clear separation between shared components and module-specific components
   - All assessment functionality now centralized in Modules/AssessmentModule/
 
+- **New Modules Added (January 2025)**: Added Calendar and Task Tracker modules
+  - Created CalendarModule with coming soon placeholder for appointment scheduling
+  - Created TaskTrackerModule with coming soon placeholder for task management
+  - Added navigation items for both modules in sidebar
+  - Both modules are independent and ready for future development
+
 ## Project Architecture
 
 - **Frontend**: React with TypeScript, Vite build system
@@ -35,6 +41,8 @@ This is a client management application with authentication, assessment modules,
 - **Authentication**: Firebase Auth with role-based access (client/staff/admin)
 - **Modules**: 
   - Assessment Module for client assessments
+  - Calendar Module for appointment scheduling (coming soon)
+  - Task Tracker Module for task management (coming soon)
   - ECCResource module for resource management
 - **Storage**: Currently using in-memory storage, can be migrated to PostgreSQL
 

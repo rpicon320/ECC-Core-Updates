@@ -11,7 +11,9 @@ import {
   X,
   ClipboardList,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Calendar,
+  CheckSquare
 } from 'lucide-react'
 
 const SIDEBAR_PREFERENCE_KEY = 'eldercare_sidebar_expanded'
@@ -61,6 +63,8 @@ export default function Layout() {
   const navigation = [
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Assessments', href: '/assessments', icon: ClipboardList },
+    { name: 'Calendar', href: '/calendar', icon: Calendar },
+    { name: 'Task Tracker', href: '/tasks', icon: CheckSquare },
     { name: 'Resources', href: '/resources', icon: BookOpen },
     { name: 'Profile', href: '/profile', icon: User },
   ]

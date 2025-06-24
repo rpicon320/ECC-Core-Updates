@@ -14,6 +14,10 @@ import Admin from './components/Admin';
 // Import Assessment Module (consolidated)
 import AssessmentModule from './Modules/AssessmentModule';
 
+// Import Calendar and Task Tracker modules
+import CalendarModule from './Modules/CalendarModule';
+import TaskTrackerModule from './Modules/TaskTrackerModule';
+
 // Import ECCResource App component
 import { App as ECCResourceApp } from './Modules/ECCResource';
 
