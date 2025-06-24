@@ -14,7 +14,8 @@ import Admin from './components/Admin';
 // Import Assessment Module (consolidated)
 import AssessmentModule from './Modules/AssessmentModule';
 
-// Import Calendar and Task Tracker modules
+// Import Dashboard, Calendar and Task Tracker modules
+import DashboardModule from './Modules/DashboardModule';
 import CalendarModule from './Modules/CalendarModule';
 import TaskTrackerModule from './Modules/TaskTrackerModule';
 
@@ -47,7 +48,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/clients" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardModule />} />
         <Route path="clients" element={<Clients />} />
         
         {/* Assessment Module Routes */}

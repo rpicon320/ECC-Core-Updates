@@ -27,11 +27,13 @@ This is a client management application with authentication, assessment modules,
   - Created clear separation between shared components and module-specific components
   - All assessment functionality now centralized in Modules/AssessmentModule/
 
-- **New Modules Added (January 2025)**: Added Calendar and Task Tracker modules
+- **New Modules Added (January 2025)**: Added Dashboard, Calendar and Task Tracker modules
+  - Created DashboardModule as main landing page with quick actions and stats
   - Created CalendarModule with coming soon placeholder for appointment scheduling
   - Created TaskTrackerModule with coming soon placeholder for task management
-  - Added navigation items for both modules in sidebar
-  - Both modules are independent and ready for future development
+  - Added navigation items for all modules in sidebar
+  - Dashboard includes functional buttons for Open Tasks, Today's Appointments, and Access Email
+  - All modules are independent and ready for future development
 
 ## Project Architecture
 
@@ -40,6 +42,7 @@ This is a client management application with authentication, assessment modules,
 - **Database**: PostgreSQL with Drizzle ORM (schema defined)
 - **Authentication**: Firebase Auth with role-based access (client/staff/admin)
 - **Modules**: 
+  - Dashboard Module as main landing page with quick actions
   - Assessment Module for client assessments
   - Calendar Module for appointment scheduling (coming soon)
   - Task Tracker Module for task management (coming soon)

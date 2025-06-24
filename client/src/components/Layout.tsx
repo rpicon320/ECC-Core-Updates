@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  CheckSquare
+  CheckSquare,
+  Home
 } from 'lucide-react'
 
 const SIDEBAR_PREFERENCE_KEY = 'eldercare_sidebar_expanded'
@@ -61,6 +62,7 @@ export default function Layout() {
   }
 
   const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Assessments', href: '/assessments', icon: ClipboardList },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
@@ -74,7 +76,10 @@ export default function Layout() {
   }
 
   const isActive = (href: string) => {
-    if (href === '/clients' && (location.pathname === '/' || location.pathname === '/clients')) {
+    if (href === '/dashboard' && location.pathname === '/') {
+      return true
+    }
+    if (href === '/clients' && location.pathname === '/clients') {
       return true
     }
     return location.pathname.startsWith(href)
