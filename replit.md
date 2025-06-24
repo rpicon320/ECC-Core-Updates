@@ -12,8 +12,9 @@ This is a client management application with authentication, assessment modules,
 
 - **Assessment Draft Saving Fixed (January 2025)**: Resolved duplicate draft creation issue
   - Implemented proper draft management logic in AssessmentContext
-  - Now updates existing assessments instead of creating new ones
-  - Added Firestore ID detection to determine update vs create operations
+  - Fixed Firestore document verification before update attempts
+  - Added robust error handling for draft save operations
+  - Now properly creates new assessments when Firestore documents don't exist
   - Improved assessment state management with proper reducer actions
 
 ## Project Architecture

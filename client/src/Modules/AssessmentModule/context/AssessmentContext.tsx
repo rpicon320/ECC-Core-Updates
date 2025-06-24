@@ -340,12 +340,45 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
 
       let savedAssessment
       
-      // Check if this is an existing assessment (has a valid Firestore ID)
+      // Check if this is an existing assessment by trying to verify it exists in Firestore
       if (state.data.id && state.data.id.length > 20) {
-        // Update existing assessment
-        await updateAssessment(state.data.id, assessmentPayload)
-        savedAssessment = { id: state.data.id, ...assessmentPayload }
-        console.log('Updated existing assessment:', state.data.id)
+        try {
+          // Try to get the existing assessment to verify it exists
+          const existingAssessment = await getAssessmentById(state.data.id)
+          if (existingAssessment) {
+            // Update existing assessment
+            await updateAssessment(state.data.id, assessmentPayload)
+            savedAssessment = { id: state.data.id, ...assessmentPayload }
+            console.log('Updated existing assessment:', state.data.id)
+          } else {
+            // Assessment doesn't exist in Firestore, create new one
+            savedAssessment = await createAssessment(assessmentPayload)
+            console.log('Created new assessment (existing ID not found):', savedAssessment.id)
+            
+            // Update the local state with the new Firestore ID
+            dispatch({
+              type: 'INITIALIZE_ASSESSMENT',
+              payload: {
+                ...state.data,
+                id: savedAssessment.id
+              }
+            })
+          }
+        } catch (error) {
+          console.log('Error checking existing assessment, creating new one:', error)
+          // If we can't verify the existing assessment, create a new one
+          savedAssessment = await createAssessment(assessmentPayload)
+          console.log('Created new assessment (after error):', savedAssessment.id)
+          
+          // Update the local state with the new Firestore ID
+          dispatch({
+            type: 'INITIALIZE_ASSESSMENT',
+            payload: {
+              ...state.data,
+              id: savedAssessment.id
+            }
+          })
+        }
       } else {
         // Create new assessment
         savedAssessment = await createAssessment(assessmentPayload)
