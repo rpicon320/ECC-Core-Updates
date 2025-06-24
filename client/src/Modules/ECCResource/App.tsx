@@ -16,6 +16,15 @@ function AppContent() {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const { user, logout } = useAuth();
 
+  // Check URL parameters to determine initial view
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
+    if (view === 'preferred-products') {
+      setCurrentView('preferred-products');
+    }
+  }, []);
+
   // Check if user is admin (for admin-only features like CSV import and deletion)
   const isAdmin = user?.email?.includes('admin') || user?.email?.includes('ecc') || true; // Force admin for testing
 

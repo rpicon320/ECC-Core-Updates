@@ -14,7 +14,11 @@ import {
   ChevronRight,
   Calendar,
   CheckSquare,
-  Home
+  Home,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Building2
 } from 'lucide-react'
 
 const SIDEBAR_PREFERENCE_KEY = 'eldercare_sidebar_expanded'
@@ -24,6 +28,7 @@ export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [resourcesExpanded, setResourcesExpanded] = useState(false)
   
   // Sidebar state management - auto-collapse on non-dashboard screens
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -67,7 +72,16 @@ export default function Layout() {
     { name: 'Assessments', href: '/assessments', icon: ClipboardList },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
     { name: 'Task Tracker', href: '/tasks', icon: CheckSquare },
-    { name: 'Resources', href: '/resources', icon: BookOpen },
+    { 
+      name: 'Resources', 
+      href: '/resources', 
+      icon: BookOpen,
+      hasSubmenu: true,
+      submenu: [
+        { name: 'Resource Directory', href: '/resources', icon: Building2 },
+        { name: 'ECC Preferred Products', href: '/resources?view=preferred-products', icon: Package }
+      ]
+    },
     { name: 'Profile', href: '/profile', icon: User },
   ]
 
