@@ -52,6 +52,12 @@ function AppRoutes() {
         
         {/* Assessment Module Routes */}
         <Route path="assessments/*" element={<AssessmentModule />} />
+        
+        {/* Calendar Module */}
+        <Route path="calendar" element={<CalendarModule />} />
+        
+        {/* Task Tracker Module */}
+        <Route path="tasks" element={<TaskTrackerModule />} />
 
         {/* ECCResource App component */}
         <Route path="resources" element={<ECCResourceApp />} />
