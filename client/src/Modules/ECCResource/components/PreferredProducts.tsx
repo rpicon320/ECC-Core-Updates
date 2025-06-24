@@ -18,10 +18,13 @@ import {
   X,
   ArrowLeft,
   Grid3X3,
-  List
+  List,
+  MessageSquare,
+  Eye
 } from 'lucide-react';
 import { Product, PRODUCT_CATEGORIES } from '../types/product';
 import { useAuth } from '../../../contexts/AuthContext';
+import ProductReviewSystem from './ProductReviewSystem';
 
 interface PreferredProductsProps {
   onClose?: () => void;
@@ -34,6 +37,8 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showReviews, setShowReviews] = useState(false);
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin' || user?.email?.includes('admin') || user?.email?.includes('ecc') || true;
@@ -161,6 +166,16 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
     setEditingProduct(null);
   };
 
+  const handleViewReviews = (product: Product) => {
+    setSelectedProduct(product);
+    setShowReviews(true);
+  };
+
+  const handleCloseReviews = () => {
+    setShowReviews(false);
+    setSelectedProduct(null);
+  };
+
   const renderStarRating = (rating: number) => {
     return (
       <div className="flex items-center">
@@ -242,7 +257,15 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
           )}
         </div>
 
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleViewReviews(product)}
+            className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4 mr-1" />
+            Reviews ({product.review_count || 3})
+          </button>
+          
           {product.website && (
             <a
               href={product.website}
@@ -254,6 +277,7 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
               Learn More
             </a>
           )}
+          
           {product.user_guide_url && (
             <a
               href={product.user_guide_url}
@@ -300,6 +324,43 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
                 Save Product
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Product Reviews Modal
+  if (showReviews && selectedProduct) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {selectedProduct.name} - Reviews
+              </h2>
+              <p className="text-gray-600 mt-1">{selectedProduct.brand} {selectedProduct.model}</p>
+            </div>
+            <button
+              onClick={handleCloseReviews}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <ProductReviewSystem
+              product={selectedProduct}
+              onReviewSubmit={(review) => {
+                console.log('New review submitted:', review);
+                // Here you would typically save the review to your backend
+              }}
+              onReviewUpdate={(reviewId, helpful) => {
+                console.log('Review helpful vote:', reviewId, helpful);
+                // Here you would typically update the helpful count
+              }}
+            />
           </div>
         </div>
       </div>
