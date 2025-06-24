@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, List, Building2, LogOut, User, Shield, Upload, Settings, Search } from 'lucide-react';
+import { Plus, List, Building2, LogOut, User, Shield, Upload, Settings, Search, Package } from 'lucide-react';
 import ResourceForm from './components/ResourceForm';
 import HomePage from './components/HomePage';
 import CSVImporter from './components/CSVImporter';
 import ServiceTypeManager from './components/ServiceTypeManager';
 import ResourceSearcher from './components/ResourceSearcher';
+import PreferredProducts from './components/PreferredProducts';
 import { useAuth } from '../../contexts/AuthContext';
 import { Resource } from './types/resource';
 
-type View = 'home' | 'form' | 'import' | 'service-types' | 'search';
+type View = 'home' | 'form' | 'import' | 'service-types' | 'search' | 'preferred-products';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -34,6 +35,10 @@ function AppContent() {
 
   const handleSearchResources = () => {
     setCurrentView('search');
+  };
+
+  const handlePreferredProducts = () => {
+    setCurrentView('preferred-products');
   };
 
   const handleEdit = (resource: Resource) => {
@@ -180,6 +185,18 @@ function AppContent() {
               </button>
 
               <button
+                onClick={handlePreferredProducts}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 font-medium whitespace-nowrap ${
+                  currentView === 'preferred-products'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                <span>Preferred Products</span>
+              </button>
+
+              <button
                 onClick={handleServiceTypes}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 font-medium whitespace-nowrap ${
                   currentView === 'service-types'
@@ -211,40 +228,54 @@ function AppContent() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          {currentView === 'home' && (
+      <div className="py-8">
+        {currentView === 'home' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <HomePage onEdit={handleEdit} />
-          )}
-          
-          {currentView === 'form' && (
+          </div>
+        )}
+        
+        {currentView === 'form' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ResourceForm
               editingResource={editingResource}
               onSuccess={handleFormSuccess}
               onCancel={handleFormCancel}
             />
-          )}
+          </div>
+        )}
 
-          {currentView === 'search' && (
+        {currentView === 'search' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ResourceSearcher
               onClose={handleSearchClose}
               onAddResource={handleAddNew}
             />
-          )}
+          </div>
+        )}
 
-          {currentView === 'service-types' && (
+        {currentView === 'service-types' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ServiceTypeManager
               onClose={handleServiceTypesClose}
             />
-          )}
+          </div>
+        )}
 
-          {currentView === 'import' && isAdmin && (
+        {currentView === 'preferred-products' && (
+          <PreferredProducts
+            onClose={() => setCurrentView('home')}
+          />
+        )}
+
+        {currentView === 'import' && isAdmin && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <CSVImporter
               onSuccess={handleImportSuccess}
               onClose={handleImportClose}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
