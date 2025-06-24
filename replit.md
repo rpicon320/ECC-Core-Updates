@@ -10,6 +10,12 @@ This is a client management application with authentication, assessment modules,
   - Server running successfully on port 5000
   - Application loading with Firebase authentication working
 
+- **Assessment Draft Saving Fixed (January 2025)**: Resolved duplicate draft creation issue
+  - Implemented proper draft management logic in AssessmentContext
+  - Now updates existing assessments instead of creating new ones
+  - Added Firestore ID detection to determine update vs create operations
+  - Improved assessment state management with proper reducer actions
+
 ## Project Architecture
 
 - **Frontend**: React with TypeScript, Vite build system

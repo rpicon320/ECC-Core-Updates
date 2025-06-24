@@ -12,7 +12,78 @@ import {
 import { getAssessmentById, createAssessment, updateAssessment } from '../services/assessmentService'
 import { Assessment } from '../../../lib/mockData'
 
-// (All helper functions, REQUIRED_FIELDS, and reducer remain unchanged — I’m including them exactly as you have them)
+// Helper functions defined first
+function initializeEmptySections(): Record<SectionKey, SectionData> {
+  const sections = {} as Record<SectionKey, SectionData>
+  const sectionKeys: SectionKey[] = ['basic', 'medical', 'functional', 'cognitive', 'slums', 'mental', 'safety', 'directives', 'psychosocial', 'hobbies', 'providers', 'services', 'summary']
+  
+  sectionKeys.forEach(key => {
+    sections[key] = {
+      isComplete: false,
+      isValid: true,
+      lastUpdated: new Date(),
+      data: {},
+      validationErrors: [],
+      completionPercentage: 0
+    }
+  })
+  
+  return sections
+}
+
+function initializeSections(assessment: Assessment): Record<SectionKey, SectionData> {
+  const sections = initializeEmptySections()
+  sections.basic.data = { ...assessment }
+  return sections
+}
+
+function convertToLegacyFormat(sections: Record<SectionKey, SectionData>): Record<string, unknown> {
+  const legacy: Record<string, unknown> = {}
+  
+  Object.entries(sections).forEach(([sectionKey, sectionData]) => {
+    Object.entries(sectionData.data).forEach(([field, value]) => {
+      legacy[field] = value
+    })
+  })
+  
+  return legacy
+}
+
+function generateId(): string {
+  return Date.now().toString() + Math.random().toString(36).substr(2, 9)
+}
+
+function calculateSectionCompletion(sectionKey: SectionKey, sectionData: SectionData): number {
+  const requiredFields = REQUIRED_FIELDS[sectionKey]
+  if (requiredFields.length === 0) {
+    const dataKeys = Object.keys(sectionData.data)
+    return dataKeys.length > 0 ? 100 : 0
+  }
+
+  let completedFields = 0
+  requiredFields.forEach(field => {
+    const value = sectionData.data[field]
+    if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        if (value.length > 0) completedFields++
+      } else if (typeof value === 'boolean' || typeof value === 'number' || (typeof value === 'string' && value.trim().length > 0)) {
+        completedFields++
+      } else {
+        completedFields++
+      }
+    }
+  })
+  return Math.round((completedFields / requiredFields.length) * 100)
+}
+
+function calculateOverallCompletion(sections: Record<SectionKey, SectionData>): number {
+  const sectionKeys = Object.keys(sections) as SectionKey[]
+  let totalCompletion = 0
+  sectionKeys.forEach(key => {
+    totalCompletion += calculateSectionCompletion(key, sections[key])
+  })
+  return Math.round(totalCompletion / sectionKeys.length)
+}
 
 type AssessmentAction = 
   | { type: 'SET_LOADING'; payload: boolean }
@@ -56,60 +127,6 @@ const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
   summary: ['additional_comments', 'assessment_completion_date']
 }
 
-function initializeEmptySections(): Record<SectionKey, SectionData> {
-  const sections: Record<SectionKey, SectionData> = {} as Record<SectionKey, SectionData>
-  const sectionKeys: SectionKey[] = [
-    'basic', 'medical', 'functional', 'cognitive', 'slums', 'mental', 
-    'safety', 'directives', 'psychosocial', 'hobbies', 
-    'providers', 'services', 'summary'
-  ]
-  sectionKeys.forEach(key => {
-    sections[key] = {
-      isComplete: false,
-      isValid: true,
-      lastUpdated: new Date(),
-      data: {},
-      validationErrors: [],
-      completionPercentage: 0
-    }
-  })
-  return sections
-}
-
-function calculateSectionCompletion(sectionKey: SectionKey, sectionData: SectionData): number {
-  const requiredFields = REQUIRED_FIELDS[sectionKey]
-  if (requiredFields.length === 0) {
-    const dataKeys = Object.keys(sectionData.data)
-    return dataKeys.length > 0 ? 100 : 0
-  }
-
-  let completedFields = 0
-  requiredFields.forEach(field => {
-    const value = sectionData.data[field]
-    if (value !== undefined && value !== null && value !== '') {
-      if (Array.isArray(value)) {
-        if (value.length > 0) completedFields++
-      } else if (typeof value === 'boolean' || typeof value === 'number' || (typeof value === 'string' && value.trim().length > 0)) {
-        completedFields++
-      } else {
-        completedFields++
-      }
-    }
-  })
-  return Math.round((completedFields / requiredFields.length) * 100)
-}
-
-function calculateOverallCompletion(sections: Record<SectionKey, SectionData>): number {
-  const sectionKeys = Object.keys(sections) as SectionKey[]
-  let totalCompletion = 0
-  sectionKeys.forEach(key => {
-    totalCompletion += calculateSectionCompletion(key, sections[key])
-  })
-  return Math.round(totalCompletion / sectionKeys.length)
-}
-
-const generateId = (): string => Date.now().toString() + Math.random().toString(36).substr(2, 9)
-
 const initialState: AssessmentFormState = {
   data: {
     id: '',
@@ -136,9 +153,105 @@ const initialState: AssessmentFormState = {
 }
 
 function assessmentReducer(state: AssessmentFormState, action: AssessmentAction): AssessmentFormState {
-  // (Reducer remains exactly as you have it — unchanged)
   switch (action.type) {
-    // your cases here...
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload }
+    
+    case 'SET_SAVING':
+      return { ...state, isSaving: action.payload }
+    
+    case 'SET_CURRENT_SECTION':
+      return { ...state, currentSection: action.payload }
+    
+    case 'UPDATE_SECTION':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          sections: {
+            ...state.data.sections,
+            [action.payload.section]: {
+              ...state.data.sections[action.payload.section],
+              ...action.payload.data,
+              lastUpdated: new Date()
+            }
+          },
+          lastModified: new Date()
+        },
+        hasUnsavedChanges: true
+      }
+    
+    case 'UPDATE_FIELD':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          sections: {
+            ...state.data.sections,
+            [action.payload.section]: {
+              ...state.data.sections[action.payload.section],
+              data: {
+                ...state.data.sections[action.payload.section].data,
+                [action.payload.field]: action.payload.value
+              },
+              lastUpdated: new Date()
+            }
+          },
+          lastModified: new Date()
+        },
+        hasUnsavedChanges: true
+      }
+    
+    case 'SET_VALIDATION_ERRORS':
+      return { ...state, validationErrors: action.payload }
+    
+    case 'SET_UNSAVED_CHANGES':
+      return { ...state, hasUnsavedChanges: action.payload }
+    
+    case 'SET_MODE':
+      return { ...state, mode: action.payload }
+    
+    case 'INITIALIZE_ASSESSMENT':
+      return {
+        ...state,
+        data: action.payload,
+        hasUnsavedChanges: false,
+        validationErrors: {}
+      }
+    
+    case 'ADD_AUDIT_ENTRY':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          audit: [...state.data.audit, action.payload]
+        }
+      }
+    
+    case 'AUTO_SAVE_SUCCESS':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          metadata: {
+            ...state.data.metadata,
+            lastAutoSave: action.payload
+          }
+        }
+      }
+    
+    case 'UPDATE_PROGRESS':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          metadata: {
+            ...state.data.metadata,
+            completionPercentage: action.payload
+          }
+        }
+      }
+    
     default:
       return state
   }
@@ -208,19 +321,160 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
     initializeAssessment()
   }, [assessmentId, user])
 
-  // ✅ UPDATED auto-save useEffect
+  // Save assessment function with proper draft management
+  const saveAssessment = useCallback(async (status: 'draft' | 'complete' = 'draft') => {
+    if (!user) {
+      console.error('No user available for saving assessment')
+      return
+    }
+
+    try {
+      dispatch({ type: 'SET_SAVING', payload: true })
+
+      const assessmentPayload = {
+        client_id: state.data.clientId,
+        created_by: state.data.createdBy,
+        status,
+        ...convertToLegacyFormat(state.data.sections)
+      }
+
+      let savedAssessment
+      
+      // Check if this is an existing assessment (has a valid Firestore ID)
+      if (state.data.id && state.data.id.length > 20) {
+        // Update existing assessment
+        await updateAssessment(state.data.id, assessmentPayload)
+        savedAssessment = { id: state.data.id, ...assessmentPayload }
+        console.log('Updated existing assessment:', state.data.id)
+      } else {
+        // Create new assessment
+        savedAssessment = await createAssessment(assessmentPayload)
+        console.log('Created new assessment:', savedAssessment.id)
+        
+        // Update the local state with the new Firestore ID
+        dispatch({
+          type: 'INITIALIZE_ASSESSMENT',
+          payload: {
+            ...state.data,
+            id: savedAssessment.id
+          }
+        })
+      }
+
+      // Add audit entry
+      const auditEntry: AuditEntry = {
+        id: generateId(),
+        timestamp: new Date(),
+        userId: user.id,
+        action: 'save',
+        description: `Assessment ${status === 'draft' ? 'draft saved' : 'completed'}`
+      }
+      dispatch({ type: 'ADD_AUDIT_ENTRY', payload: auditEntry })
+      dispatch({ type: 'SET_UNSAVED_CHANGES', payload: false })
+      
+      console.log(`Assessment ${status} saved successfully`)
+    } catch (error) {
+      console.error('Failed to save assessment:', error)
+      throw error
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false })
+    }
+  }, [state.data, user])
+
+  // Auto-save useEffect
   useEffect(() => {
     if (!state.data.metadata.autoSaveEnabled || !state.hasUnsavedChanges) return
     const autoSaveTimer = setTimeout(() => {
       saveAssessment('draft')
     }, 30000)
     return () => clearTimeout(autoSaveTimer)
-  }, [state.hasUnsavedChanges])
+  }, [state.hasUnsavedChanges, saveAssessment])
 
-  // (Everything else: action handlers, context value, helper functions remain unchanged — reuse as-is)
+  // Action handlers
+  const updateSection = useCallback((section: SectionKey, data: Partial<SectionData>) => {
+    dispatch({ type: 'UPDATE_SECTION', payload: { section, data } })
+  }, [])
+
+  const updateField = useCallback((section: SectionKey, field: string, value: unknown) => {
+    dispatch({ type: 'UPDATE_FIELD', payload: { section, field, value } })
+  }, [])
+
+  const setCurrentSection = useCallback((section: SectionKey) => {
+    dispatch({ type: 'SET_CURRENT_SECTION', payload: section })
+  }, [])
+
+  const validateSection = useCallback((section: SectionKey): ValidationError[] => {
+    const requiredFields = REQUIRED_FIELDS[section] || []
+    const sectionData = state.data.sections[section]
+    const errors: ValidationError[] = []
+
+    requiredFields.forEach(field => {
+      const value = sectionData.data[field]
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        errors.push({
+          field,
+          message: `${field.replace(/_/g, ' ')} is required`,
+          severity: 'error'
+        })
+      }
+    })
+
+    return errors
+  }, [state.data.sections])
+
+  const validateAll = useCallback((): Record<string, ValidationError[]> => {
+    const allErrors: Record<string, ValidationError[]> = {}
+    Object.keys(state.data.sections).forEach(section => {
+      const errors = validateSection(section as SectionKey)
+      if (errors.length > 0) {
+        allErrors[section] = errors
+      }
+    })
+    return allErrors
+  }, [state.data.sections, validateSection])
+
+  const exportData = useCallback((format: 'json' | 'pdf' | 'print') => {
+    console.log(`Exporting assessment data in ${format} format`)
+  }, [])
+
+  const resetForm = useCallback(() => {
+    const newAssessment: AssessmentData = {
+      id: generateId(),
+      version: 1,
+      lastModified: new Date(),
+      sections: initializeEmptySections(),
+      status: 'draft',
+      audit: [],
+      clientId: '',
+      createdBy: user?.id || '',
+      metadata: {
+        autoSaveEnabled: true,
+        totalTimeSpent: 0,
+        sessionStartTime: new Date(),
+        completionPercentage: 0
+      }
+    }
+    dispatch({ type: 'INITIALIZE_ASSESSMENT', payload: newAssessment })
+  }, [user])
+
+  const setMode = useCallback((mode: 'edit' | 'view' | 'print') => {
+    dispatch({ type: 'SET_MODE', payload: mode })
+  }, [])
+
+  const actions = {
+    updateSection,
+    updateField,
+    setCurrentSection,
+    saveAssessment,
+    validateSection,
+    validateAll,
+    exportData,
+    resetForm,
+    setMode
+  }
 
   return (
-    <AssessmentContext.Provider value={{ state, actions: {/* your actions */} }}>
+    <AssessmentContext.Provider value={{ state, actions }}>
       {children}
     </AssessmentContext.Provider>
   )
@@ -231,5 +485,3 @@ export function useAssessment() {
   if (!context) throw new Error('useAssessment must be used within an AssessmentProvider')
   return context
 }
-
-// Helper: initializeSections, extractSectionData, cleanUndefinedValues, convertToLegacyFormat — unchanged
