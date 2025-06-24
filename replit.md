@@ -32,7 +32,7 @@ This is a client management application with authentication, assessment modules,
   - Created CalendarModule with coming soon placeholder for appointment scheduling
   - Created TaskTrackerModule with coming soon placeholder for task management
   - Added navigation items for all modules in sidebar
-  - Dashboard includes functional buttons for Open Tasks, Today's Appointments, and Access Email
+  - Dashboard includes functional buttons for Open Tasks, Today's Appointments, Access Email, and Create Note
   - All modules are independent and ready for future development
 
 ## Project Architecture

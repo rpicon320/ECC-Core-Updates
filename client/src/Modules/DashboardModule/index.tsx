@@ -8,7 +8,8 @@ import {
   TrendingUp,
   Clock,
   Bell,
-  Plus
+  Plus,
+  PenTool
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +17,37 @@ import { useNavigate } from 'react-router-dom';
 const DashboardModule: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [showNoteModal, setShowNoteModal] = React.useState(false);
+  const [noteText, setNoteText] = React.useState('');
+  const [notes, setNotes] = React.useState<Array<{id: string, text: string, date: string}>>([]);
+
+  React.useEffect(() => {
+    const savedNotes = localStorage.getItem('dashboard-notes');
+    if (savedNotes) {
+      setNotes(JSON.parse(savedNotes));
+    }
+  }, []);
+
+  const saveNote = () => {
+    if (noteText.trim()) {
+      const newNote = {
+        id: Date.now().toString(),
+        text: noteText.trim(),
+        date: new Date().toLocaleString()
+      };
+      const updatedNotes = [newNote, ...notes];
+      setNotes(updatedNotes);
+      localStorage.setItem('dashboard-notes', JSON.stringify(updatedNotes));
+      setNoteText('');
+      setShowNoteModal(false);
+    }
+  };
+
+  const deleteNote = (id: string) => {
+    const updatedNotes = notes.filter(note => note.id !== id);
+    setNotes(updatedNotes);
+    localStorage.setItem('dashboard-notes', JSON.stringify(updatedNotes));
+  };
 
   const quickActions = [
     {
@@ -43,6 +75,15 @@ const DashboardModule: React.FC = () => {
       color: 'bg-purple-500',
       hoverColor: 'hover:bg-purple-600',
       action: () => window.open('mailto:', '_blank'),
+      available: true
+    },
+    {
+      title: 'Create Note',
+      description: 'Quickly jot down notes and reminders',
+      icon: PenTool,
+      color: 'bg-indigo-500',
+      hoverColor: 'hover:bg-indigo-600',
+      action: () => setShowNoteModal(true),
       available: true
     },
     {
@@ -178,6 +219,43 @@ const DashboardModule: React.FC = () => {
           </div>
         </div>
 
+        {/* Quick Notes */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Quick Notes</h2>
+            <button
+              onClick={() => setShowNoteModal(true)}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Note
+            </button>
+          </div>
+          {notes.length > 0 ? (
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {notes.map((note) => (
+                <div key={note.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <p className="text-gray-700 flex-1 mr-2">{note.text}</p>
+                    <button
+                      onClick={() => deleteNote(note.id)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{note.date}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <PenTool className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">No notes yet. Click "Add Note" to create your first note.</p>
+            </div>
+          )}
+        </div>
+
         {/* Recent Activity */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
@@ -197,6 +275,40 @@ const DashboardModule: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Note Modal */}
+      {showNoteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Create Quick Note</h3>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Type your note here..."
+              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              autoFocus
+            />
+            <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowNoteModal(false);
+                  setNoteText('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveNote}
+                disabled={!noteText.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Save Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
