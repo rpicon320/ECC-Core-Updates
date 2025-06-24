@@ -4,6 +4,7 @@ import { SectionKey, SectionData, ValidationError } from '../../../../../types/a
 import { Client } from '../../../../../lib/mockData'
 import BasicInformationSection from '../sections/BasicInformationSection'
 import MedicalHistorySection from '../sections/MedicalHistorySection'
+import HealthSymptomsSection from '../sections/HealthSymptomsSection'
 import FunctionalAssessmentSection from '../sections/FunctionalAssessmentSection'
 import CognitiveAssessmentSection from '../sections/CognitiveAssessmentSection'
 import SlumsAssessmentSection from '../sections/SlumsAssessmentSection'
@@ -30,6 +31,7 @@ interface SectionRendererProps {
 const sectionConfig = {
   basic: { label: 'Client Information' },
   medical: { label: 'Medical History' },
+  health_symptoms: { label: 'Health & Symptoms' },
   functional: { label: 'Functional Status' },
   cognitive: { label: 'Cognition' },
   slums: { label: 'SLUMS Assessment' },
@@ -95,6 +97,9 @@ export default function SectionRenderer({
       
       case 'medical':
         return <MedicalHistorySection {...commonProps} />
+      
+      case 'health_symptoms':
+        return <HealthSymptomsSection {...commonProps} />
       
       case 'functional':
         return <FunctionalAssessmentSection {...commonProps} />

@@ -15,7 +15,7 @@ import { Assessment } from '../../../lib/mockData'
 // Helper functions defined first
 function initializeEmptySections(): Record<SectionKey, SectionData> {
   const sections = {} as Record<SectionKey, SectionData>
-  const sectionKeys: SectionKey[] = ['basic', 'medical', 'functional', 'cognitive', 'slums', 'mental', 'safety', 'directives', 'psychosocial', 'hobbies', 'providers', 'services', 'summary']
+  const sectionKeys: SectionKey[] = ['basic', 'medical', 'health_symptoms', 'functional', 'cognitive', 'slums', 'mental', 'safety', 'directives', 'psychosocial', 'hobbies', 'providers', 'services', 'summary']
   
   sectionKeys.forEach(key => {
     sections[key] = {
@@ -103,6 +103,7 @@ type AssessmentAction =
 const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
   basic: ['clientId', 'assessmentDate', 'consultationReasons'],
   medical: ['allergies', 'currentMedications', 'primaryCarePhysicianName'],
+  health_symptoms: ['nutrition_status', 'pain_level', 'medication_adherence', 'sleep_quality'],
   functional: [
     'adl_bathing', 'adl_dressing', 'adl_toileting', 'adl_transferring', 'adl_continence', 'adl_feeding',
     'iadl_phone', 'iadl_shopping', 'iadl_food_prep', 'iadl_housekeeping', 'iadl_laundry', 

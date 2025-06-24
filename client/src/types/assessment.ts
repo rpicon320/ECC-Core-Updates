@@ -29,6 +29,7 @@ export interface SectionData {
 export type SectionKey = 
   | 'basic' 
   | 'medical' 
+  | 'health_symptoms'
   | 'functional' 
   | 'cognitive' 
   | 'slums'

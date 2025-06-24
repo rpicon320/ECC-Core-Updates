@@ -33,6 +33,7 @@ interface NavigationSidebarProps {
 const sectionConfig = {
   basic: { label: 'Client Information', icon: User, color: 'blue' },
   medical: { label: 'Medical History', icon: Heart, color: 'red' },
+  health_symptoms: { label: 'Health & Symptoms', icon: Stethoscope, color: 'orange' },
   functional: { label: 'Functional Status', icon: Activity, color: 'green' },
   cognitive: { label: 'Cognition', icon: Brain, color: 'purple' },
   slums: { label: 'SLUMS Assessment', icon: ClipboardList, color: 'indigo' },
