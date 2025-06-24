@@ -300,7 +300,7 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
         }
       } else if (user) {
         const newAssessment: AssessmentData = {
-          id: generateId(),
+          id: '', // Start with empty ID - will be set when first saved to Firestore
           version: 1,
           lastModified: new Date(),
           sections: initializeEmptySections(),
@@ -340,35 +340,18 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
 
       let savedAssessment
       
-      // Check if this is an existing assessment by trying to verify it exists in Firestore
-      if (state.data.id && state.data.id.length > 20) {
+      // Check if this assessment has already been saved to Firestore
+      if (state.data.id) {
         try {
-          // Try to get the existing assessment to verify it exists
-          const existingAssessment = await getAssessmentById(state.data.id)
-          if (existingAssessment) {
-            // Update existing assessment
-            await updateAssessment(state.data.id, assessmentPayload)
-            savedAssessment = { id: state.data.id, ...assessmentPayload }
-            console.log('Updated existing assessment:', state.data.id)
-          } else {
-            // Assessment doesn't exist in Firestore, create new one
-            savedAssessment = await createAssessment(assessmentPayload)
-            console.log('Created new assessment (existing ID not found):', savedAssessment.id)
-            
-            // Update the local state with the new Firestore ID
-            dispatch({
-              type: 'INITIALIZE_ASSESSMENT',
-              payload: {
-                ...state.data,
-                id: savedAssessment.id
-              }
-            })
-          }
+          // Try to update the existing assessment
+          await updateAssessment(state.data.id, assessmentPayload)
+          savedAssessment = { id: state.data.id, ...assessmentPayload }
+          console.log('Updated existing assessment:', state.data.id)
         } catch (error) {
-          console.log('Error checking existing assessment, creating new one:', error)
-          // If we can't verify the existing assessment, create a new one
+          console.log('Error updating assessment, creating new one:', error)
+          // If update fails, create a new assessment
           savedAssessment = await createAssessment(assessmentPayload)
-          console.log('Created new assessment (after error):', savedAssessment.id)
+          console.log('Created new assessment (after update error):', savedAssessment.id)
           
           // Update the local state with the new Firestore ID
           dispatch({
@@ -380,7 +363,7 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
           })
         }
       } else {
-        // Create new assessment
+        // Create new assessment (no ID means never saved before)
         savedAssessment = await createAssessment(assessmentPayload)
         console.log('Created new assessment:', savedAssessment.id)
         
@@ -472,7 +455,7 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
 
   const resetForm = useCallback(() => {
     const newAssessment: AssessmentData = {
-      id: generateId(),
+      id: '', // Start with empty ID - will be set when first saved to Firestore
       version: 1,
       lastModified: new Date(),
       sections: initializeEmptySections(),
