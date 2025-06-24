@@ -124,5 +124,10 @@ export const PRODUCT_CATEGORIES = [
   'Incontinence Products',
   'Wound Care',
   'Monitoring Devices',
+  'Dementia & Memory Care Aids',
+  'Sleep & Bedding',
+  'Rehabilitation & Therapy',
+  'Transportation Aids',
+  'Personal Care & Grooming',
   'Other'
 ] as const;
