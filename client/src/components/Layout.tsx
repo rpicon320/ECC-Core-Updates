@@ -28,7 +28,7 @@ export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [resourcesExpanded, setResourcesExpanded] = useState(false)
+  const [resourcesExpanded, setResourcesExpanded] = useState(true) // Start expanded to show submenu
   
   // Sidebar state management - auto-collapse on non-dashboard screens
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -129,7 +129,10 @@ export default function Layout() {
                   return (
                     <div key={item.name}>
                       <button
-                        onClick={() => setResourcesExpanded(!resourcesExpanded)}
+                        onClick={() => {
+                          console.log('Mobile Resources clicked, current state:', resourcesExpanded);
+                          setResourcesExpanded(!resourcesExpanded);
+                        }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                           active
                             ? 'bg-blue-100 text-blue-700 shadow-sm'
@@ -248,7 +251,10 @@ export default function Layout() {
                 return (
                   <div key={item.name}>
                     <button
-                      onClick={() => setResourcesExpanded(!resourcesExpanded)}
+                      onClick={() => {
+                        console.log('Resources clicked, current state:', resourcesExpanded);
+                        setResourcesExpanded(!resourcesExpanded);
+                      }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
                         active
                           ? 'bg-blue-100 text-blue-700 shadow-sm'
@@ -277,21 +283,24 @@ export default function Layout() {
                     </button>
                     {resourcesExpanded && sidebarExpanded && (
                       <div className="mt-1 ml-8 space-y-1">
-                        {item.submenu?.map((subItem) => (
-                          <Link
-                            key={subItem.name}
-                            to={subItem.href}
-                            className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                              location.pathname === subItem.href || 
-                              (subItem.href.includes('preferred-products') && location.search.includes('preferred-products'))
-                                ? 'bg-blue-50 text-blue-600 font-medium'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
-                            }`}
-                          >
-                            <subItem.icon className="mr-3 h-4 w-4 flex-shrink-0" />
-                            <span>{subItem.name}</span>
-                          </Link>
-                        ))}
+                        {item.submenu?.map((subItem) => {
+                          console.log('Rendering submenu item:', subItem.name, subItem.href);
+                          return (
+                            <Link
+                              key={subItem.name}
+                              to={subItem.href}
+                              className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                location.pathname === subItem.href || 
+                                (subItem.href.includes('preferred-products') && location.search.includes('preferred-products'))
+                                  ? 'bg-blue-50 text-blue-600 font-medium'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                              }`}
+                            >
+                              <subItem.icon className="mr-3 h-4 w-4 flex-shrink-0" />
+                              <span>{subItem.name}</span>
+                            </Link>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
