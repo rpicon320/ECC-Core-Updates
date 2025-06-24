@@ -113,16 +113,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <span className="text-sm font-medium">{product.price_range}</span>
           </div>
           
-          {(product.medicare_covered || product.medicaid_covered) && (
+          {(product.medicare_covered || product.medicaid_covered || product.fsa_hsa_eligible) && (
             <div className="flex items-center text-blue-600">
               <Shield className="h-4 w-4 mr-1" />
               <span className="text-xs font-medium">
-                {product.medicare_covered && product.medicaid_covered 
-                  ? 'Medicare/Medicaid' 
-                  : product.medicare_covered 
-                    ? 'Medicare' 
-                    : 'Medicaid'
-                }
+                {[
+                  product.medicare_covered && 'Medicare',
+                  product.medicaid_covered && 'Medicaid', 
+                  product.fsa_hsa_eligible && 'FSA/HSA'
+                ].filter(Boolean).join('/')}
               </span>
             </div>
           )}

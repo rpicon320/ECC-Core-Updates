@@ -22,6 +22,7 @@ export interface Product {
   reviews_url?: string;
   medicaid_covered?: boolean;
   medicare_covered?: boolean;
+  fsa_hsa_eligible?: boolean;
   insurance_notes?: string;
   user_guide_url?: string;
   video_demo_url?: string;
@@ -110,6 +111,7 @@ export interface ProductFormData {
   reviews_url: string;
   medicaid_covered: boolean;
   medicare_covered: boolean;
+  fsa_hsa_eligible: boolean;
   insurance_notes: string;
   user_guide_url: string;
   video_demo_url: string;

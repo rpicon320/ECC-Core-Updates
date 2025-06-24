@@ -24,6 +24,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
     reviews_url: '',
     medicaid_covered: false,
     medicare_covered: false,
+    fsa_hsa_eligible: false,
     insurance_notes: '',
     user_guide_url: '',
     video_demo_url: '',
@@ -53,6 +54,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         reviews_url: product.reviews_url || '',
         medicaid_covered: product.medicaid_covered || false,
         medicare_covered: product.medicare_covered || false,
+        fsa_hsa_eligible: product.fsa_hsa_eligible || false,
         insurance_notes: product.insurance_notes || '',
         user_guide_url: product.user_guide_url || '',
         video_demo_url: product.video_demo_url || '',
@@ -121,6 +123,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
       reviews_url: formData.reviews_url || undefined,
       medicaid_covered: formData.medicaid_covered,
       medicare_covered: formData.medicare_covered,
+      fsa_hsa_eligible: formData.fsa_hsa_eligible,
       insurance_notes: formData.insurance_notes,
       user_guide_url: formData.user_guide_url,
       video_demo_url: formData.video_demo_url,
@@ -418,8 +421,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 />
                 <span className="ml-2 text-sm text-gray-700">Medicaid covered</span>
               </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.fsa_hsa_eligible}
+                  onChange={(e) => handleInputChange('fsa_hsa_eligible', e.target.checked)}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">FSA/HSA eligible</span>
+              </label>
             </div>
-            {(formData.medicare_covered || formData.medicaid_covered) && (
+            {(formData.medicare_covered || formData.medicaid_covered || formData.fsa_hsa_eligible) && (
               <div className="mt-2">
                 <input
                   type="text"
