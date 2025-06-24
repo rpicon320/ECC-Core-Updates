@@ -98,6 +98,7 @@ type AssessmentAction =
   | { type: 'ADD_AUDIT_ENTRY'; payload: AuditEntry }
   | { type: 'AUTO_SAVE_SUCCESS'; payload: Date }
   | { type: 'UPDATE_PROGRESS'; payload: number }
+  | { type: 'UPDATE_CLIENT_ID'; payload: string }
 
 const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
   basic: ['clientId', 'assessmentDate', 'consultationReasons'],
@@ -252,6 +253,16 @@ function assessmentReducer(state: AssessmentFormState, action: AssessmentAction)
         }
       }
     
+    case 'UPDATE_CLIENT_ID':
+      return {
+        ...state,
+        data: {
+          ...state.data,
+          clientId: action.payload
+        },
+        hasUnsavedChanges: true
+      }
+    
     default:
       return state
   }
@@ -363,7 +374,8 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
             type: 'INITIALIZE_ASSESSMENT',
             payload: {
               ...state.data,
-              id: savedAssessment.id
+              id: savedAssessment.id,
+              clientId: clientId // Ensure clientId is preserved
             }
           })
         }
@@ -377,7 +389,8 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
           type: 'INITIALIZE_ASSESSMENT',
           payload: {
             ...state.data,
-            id: savedAssessment.id
+            id: savedAssessment.id,
+            clientId: clientId // Ensure clientId is preserved
           }
         })
       }
@@ -421,15 +434,13 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
     
     // If updating clientId in basic section, also update the main clientId
     if (section === 'basic' && field === 'clientId') {
+      console.log('Updating clientId to:', value)
       dispatch({
-        type: 'INITIALIZE_ASSESSMENT',
-        payload: {
-          ...state.data,
-          clientId: value as string
-        }
+        type: 'UPDATE_CLIENT_ID',
+        payload: value as string
       })
     }
-  }, [state.data])
+  }, [])
 
   const setCurrentSection = useCallback((section: SectionKey) => {
     dispatch({ type: 'SET_CURRENT_SECTION', payload: section })
