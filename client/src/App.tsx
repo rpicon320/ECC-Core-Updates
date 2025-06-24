@@ -11,10 +11,10 @@ import Clients from './components/Clients';
 import Profile from './components/Profile';
 import Admin from './components/Admin';
 
-// Import Assessment Module
+// Import Assessment Module (consolidated)
 import AssessmentModule from './Modules/AssessmentModule';
 
-// Import ECCResource App component which includes its own AuthProvider
+// Import ECCResource App component
 import { App as ECCResourceApp } from './Modules/ECCResource';
 
 function AppRoutes() {

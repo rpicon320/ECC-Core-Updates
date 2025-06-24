@@ -1,11 +1,11 @@
-// src/modules/ECCResource/index.ts
+// ECCResource Module Exports
 
-export { default as App } from './src/App';
-export { default as AuthWrapper } from './src/components/AuthWrapper';
-export { default as CSVImporter } from './src/components/CSVImporter';
-export { default as ECCFavoriteStar } from './src/components/ECCFavoriteStar';
-export { default as HomePage } from './src/components/HomePage';
-export { default as ResourceForm } from './src/components/ResourceForm';
-export { default as ResourceList } from './src/components/ResourceList';
-export { default as ResourceSearcher } from './src/components/ResourceSearcher';
-export { default as ServiceTypeManager } from './src/components/ServiceTypeManager';
+export { default as App } from './App';
+export { default as AuthWrapper } from './components/AuthWrapper';
+export { default as CSVImporter } from './components/CSVImporter';
+export { default as ECCFavoriteStar } from './components/ECCFavoriteStar';
+export { default as HomePage } from './components/HomePage';
+export { default as ResourceForm } from './components/ResourceForm';
+export { default as ResourceList } from './components/ResourceList';
+export { default as ResourceSearcher } from './components/ResourceSearcher';
+export { default as ServiceTypeManager } from './components/ServiceTypeManager';

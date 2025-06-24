@@ -5,7 +5,7 @@ import HomePage from './components/HomePage';
 import CSVImporter from './components/CSVImporter';
 import ServiceTypeManager from './components/ServiceTypeManager';
 import ResourceSearcher from './components/ResourceSearcher';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Resource } from './types/resource';
 
 type View = 'home' | 'form' | 'import' | 'service-types' | 'search';

@@ -19,6 +19,14 @@ This is a client management application with authentication, assessment modules,
   - Client names now display correctly in assessments list
   - Improved assessment state management with proper reducer actions
 
+- **File Structure Optimization (January 2025)**: Eliminated duplicates and improved organization
+  - Removed duplicate assessment components from main components directory
+  - Consolidated AssessmentModule into single location under Modules/
+  - Cleaned up ECCResource module structure
+  - Removed redundant configuration files and nested directories
+  - Created clear separation between shared components and module-specific components
+  - All assessment functionality now centralized in Modules/AssessmentModule/
+
 ## Project Architecture
 
 - **Frontend**: React with TypeScript, Vite build system
