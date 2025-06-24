@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Package, 
   Plus, 
@@ -14,6 +14,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import ProductReviewSystem from './ProductReviewSystem';
 import ProductCard from './ProductCard';
 import ProductForm from './ProductForm';
+import { productService } from '../services/productService';
 
 interface PreferredProductsProps {
   onClose?: () => void;
@@ -303,15 +304,34 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
 
 
 
+  const handleSaveProduct = async (productData: Partial<Product>) => {
+    try {
+      setLoading(true);
+      
+      if (editingProduct) {
+        // Update existing product
+        await productService.updateProduct(editingProduct.id!, productData);
+      } else {
+        // Create new product
+        await productService.createProduct(productData as Omit<Product, 'id'>);
+      }
+      
+      // Reload products and close form
+      await loadProducts();
+      handleCloseForm();
+    } catch (err) {
+      console.error('Error saving product:', err);
+      setError('Failed to save product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (showAddForm) {
     return (
       <ProductForm
         product={editingProduct}
-        onSave={(productData) => {
-          console.log('Product saved:', productData);
-          // Here you would typically save to your backend
-          handleCloseForm();
-        }}
+        onSave={handleSaveProduct}
         onCancel={handleCloseForm}
       />
     );
@@ -440,20 +460,42 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        </div>
+      )}
+
       {/* Products Grid */}
-      <div className={`grid gap-6 ${
-        viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 max-w-4xl mx-auto'
-      }`}>
-        {filteredProducts.map(product => (
-          <ProductCard 
-            key={product.id} 
-            product={product} 
-            onViewReviews={handleViewReviews}
-            onEdit={isAdmin ? handleEditProduct : undefined}
-            isAdmin={isAdmin}
-          />
-        ))}
-      </div>
+      {!loading && (
+        <div className={`grid gap-6 ${
+          viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 max-w-4xl mx-auto'
+        }`}>
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map(product => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onViewReviews={handleViewReviews}
+                onEdit={isAdmin ? handleEditProduct : undefined}
+                isAdmin={isAdmin}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+              <p className="text-gray-500">
+                {searchTerm || selectedCategory 
+                  ? 'Try adjusting your search or filter criteria.' 
+                  : 'No products available at this time.'
+                }
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
