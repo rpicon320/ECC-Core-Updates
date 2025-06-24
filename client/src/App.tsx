@@ -49,7 +49,7 @@ function AppRoutes() {
         {/* Assessment Module Routes */}
         <Route path="assessments/*" element={<AssessmentModule />} />
 
-        {/* ECCResource App component with its own AuthProvider */}
+        {/* ECCResource App component */}
         <Route path="resources" element={<ECCResourceApp />} />
 
         <Route path="profile" element={<Profile />} />

@@ -5,7 +5,7 @@ import HomePage from './components/HomePage';
 import CSVImporter from './components/CSVImporter';
 import ServiceTypeManager from './components/ServiceTypeManager';
 import ResourceSearcher from './components/ResourceSearcher';
-import { AuthProvider, useAuth } from './components/AuthWrapper';
+import { useAuth } from '../../../contexts/AuthContext';
 import { Resource } from './types/resource';
 
 type View = 'home' | 'form' | 'import' | 'service-types' | 'search';
@@ -250,12 +250,6 @@ function AppContent() {
   );
 }
 
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-}
-
-export default App;
+// Export AppContent directly since AuthProvider is handled at the main app level
+export { AppContent as App };
+export default AppContent;

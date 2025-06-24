@@ -1,42 +1,25 @@
-import { initializeApp } from 'firebase/app'
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
-import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
+// Firebase configuration using environment variables for security
 const firebaseConfig = {
-  apiKey: "AIzaSyC2tsIWxPxM7Sh708pWnmfvlOxZRJjP7Hs",
-  authDomain: "eccapp-fcc81.firebaseapp.com",
-  projectId: "eccapp-fcc81",
-  storageBucket: "eccapp-fcc81.firebasestorage.app",
-  messagingSenderId: "553021425596",
-  appId: "1:553021425596:web:c760c1683ef7d104ed8db9",
-  measurementId: "G-WB98XFT5L6"
-}
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyC2tsIWxPxM7Sh708pWnmfvlOxZRJjP7Hs",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "eccapp-fcc81.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "eccapp-fcc81",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "eccapp-fcc81.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "553021425596",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:553021425596:web:c760c1683ef7d104ed8db9",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-WB98XFT5L6"
+};
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig)
+const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
-export const db = getFirestore(app)
+// Initialize services
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+export const auth = getAuth(app);
 
-// Initialize Auth
-export const auth = getAuth(app)
-
-// Connect to emulators in development only if explicitly requested and available
-if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
-  try {
-    // Check if we haven't already connected to emulators
-    if (!db._delegate._databaseId.projectId.includes('demo-')) {
-      connectFirestoreEmulator(db, 'localhost', 8080)
-    }
-    if (!auth.config.emulator) {
-      connectAuthEmulator(auth, 'http://localhost:9099')
-    }
-    console.log('Connected to Firebase emulators')
-  } catch (error) {
-    console.warn('Firebase emulators not available, using production Firebase:', error)
-  }
-} else {
-  console.log('Using production Firebase')
-}
-
-export default app
+export default app;
