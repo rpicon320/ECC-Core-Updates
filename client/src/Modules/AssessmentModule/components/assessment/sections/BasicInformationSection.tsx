@@ -150,7 +150,11 @@ export default function BasicInformationSection({
             <select
               id="clientId"
               value={data.clientId as string || ''}
-              onChange={(e) => onUpdateField('clientId', e.target.value)}
+              onChange={(e) => {
+                const newClientId = e.target.value;
+                onUpdateField('clientId', newClientId);
+                console.log('Client selected:', newClientId);
+              }}
               disabled={isReadOnly}
               className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
                 getFieldError('clientId') ? 'border-red-300' : 'border-gray-300'

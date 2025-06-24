@@ -30,7 +30,14 @@ function AssessmentFormContent() {
       }
     }
     fetchClients()
-  }, [])
+    
+    // Expose assessment context to window for child components
+    window.assessmentContext = { updateClientId: actions.updateClientId }
+    
+    return () => {
+      delete window.assessmentContext
+    }
+  }, [actions.updateClientId])
 
   // Handle unsaved changes warning
   useEffect(() => {
@@ -61,6 +68,12 @@ function AssessmentFormContent() {
       }
     } catch (error) {
       console.error('Failed to save assessment:', error)
+      // Show user-friendly error message
+      if (error.message?.includes('select a client')) {
+        alert('Please select a client before saving the assessment.')
+      } else {
+        alert('Failed to save assessment. Please try again.')
+      }
     }
   }
 

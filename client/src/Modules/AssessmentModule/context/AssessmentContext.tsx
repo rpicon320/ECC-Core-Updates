@@ -345,6 +345,11 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
       // Ensure clientId is available from the basic section data
       const clientId = state.data.clientId || state.data.sections.basic?.data?.clientId || ''
       
+      if (!clientId) {
+        console.error('No client ID provided for assessment');
+        throw new Error('Please select a client before saving the assessment');
+      }
+      
       const assessmentPayload = {
         client_id: clientId,
         created_by: state.data.createdBy,
