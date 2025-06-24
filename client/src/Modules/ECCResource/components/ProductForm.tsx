@@ -19,6 +19,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
     price_range: '',
     where_to_buy: '',
     website: '',
+    rating: 0,
+    review_count: 0,
+    reviews_url: '',
     medicaid_covered: false,
     medicare_covered: false,
     insurance_notes: '',
@@ -45,6 +48,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         price_range: product.price_range || '',
         where_to_buy: product.where_to_buy?.join(', ') || '',
         website: product.website || '',
+        rating: product.rating || 0,
+        review_count: product.review_count || 0,
+        reviews_url: product.reviews_url || '',
         medicaid_covered: product.medicaid_covered || false,
         medicare_covered: product.medicare_covered || false,
         insurance_notes: product.insurance_notes || '',
@@ -110,6 +116,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
       where_to_buy: formData.where_to_buy.split(',').map(w => w.trim()).filter(w => w),
       retailer_links: retailerLinks,
       website: formData.website,
+      rating: formData.rating > 0 ? formData.rating : undefined,
+      review_count: formData.review_count > 0 ? formData.review_count : undefined,
+      reviews_url: formData.reviews_url || undefined,
       medicaid_covered: formData.medicaid_covered,
       medicare_covered: formData.medicare_covered,
       insurance_notes: formData.insurance_notes,
@@ -243,6 +252,60 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
+          </div>
+
+          {/* Reviews Information */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Reviews Information
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Reviews URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="Link to retailer reviews page"
+                  value={formData.reviews_url}
+                  onChange={(e) => handleInputChange('reviews_url', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Average Rating (1-5)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  placeholder="4.5"
+                  value={formData.rating || ''}
+                  onChange={(e) => handleInputChange('rating', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Number of Reviews
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="1247"
+                  value={formData.review_count || ''}
+                  onChange={(e) => handleInputChange('review_count', parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Enter the actual rating and review count from the retailer's product page
+            </p>
           </div>
 
           {/* Retailer Links Section */}

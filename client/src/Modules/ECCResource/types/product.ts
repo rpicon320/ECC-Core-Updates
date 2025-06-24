@@ -19,6 +19,7 @@ export interface Product {
   image_url?: string;
   rating?: number;
   review_count?: number;
+  reviews_url?: string;
   medicaid_covered?: boolean;
   medicare_covered?: boolean;
   insurance_notes?: string;
@@ -104,6 +105,9 @@ export interface ProductFormData {
   price_range: string;
   where_to_buy: string;
   website: string;
+  rating: number;
+  review_count: number;
+  reviews_url: string;
   medicaid_covered: boolean;
   medicare_covered: boolean;
   insurance_notes: string;

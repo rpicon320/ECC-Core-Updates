@@ -155,13 +155,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Primary Actions Row */}
           <div className="flex flex-wrap gap-2">
             {/* Reviews Button */}
-            <button
-              onClick={() => onViewReviews(product)}
-              className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Reviews ({product.review_count || 3})
-            </button>
+            {product.reviews_url ? (
+              <a
+                href={product.reviews_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Reviews ({product.review_count || 'See all'})
+              </a>
+            ) : (
+              <button
+                onClick={() => onViewReviews(product)}
+                className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Reviews ({product.review_count || 3})
+              </button>
+            )}
             
             {/* Learn More Button */}
             {product.website && (
