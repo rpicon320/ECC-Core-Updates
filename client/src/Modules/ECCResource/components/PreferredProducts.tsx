@@ -4,27 +4,15 @@ import {
   Plus, 
   Search, 
   Filter, 
-  Star, 
-  DollarSign, 
-  ShoppingCart, 
-  ExternalLink, 
-  Heart,
-  Shield,
-  User,
-  FileText,
-  Play,
-  Edit3,
-  Trash2,
   X,
   ArrowLeft,
   Grid3X3,
-  List,
-  MessageSquare,
-  Eye
+  List
 } from 'lucide-react';
 import { Product, PRODUCT_CATEGORIES } from '../types/product';
 import { useAuth } from '../../../contexts/AuthContext';
 import ProductReviewSystem from './ProductReviewSystem';
+import ProductCard from './ProductCard';
 
 interface PreferredProductsProps {
   onClose?: () => void;
@@ -196,6 +184,36 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
       isActive: true
     },
     {
+      id: '7',
+      name: 'Grab Bar Safety Set',
+      category: 'Bathroom Safety',
+      brand: 'Moen',
+      model: 'SecureMount',
+      description: 'Professional-grade grab bars for bathroom safety with secure mounting system.',
+      features: ['Stainless steel', 'Concealed mounting', 'ADA compliant', 'Multiple sizes', 'Lifetime warranty'],
+      price_range: '$40-120',
+      where_to_buy: ['Home Depot', 'Lowe\'s', 'Amazon', 'Medical supply stores'],
+      website: 'https://www.moen.com',
+      image_url: '',
+      rating: 4.8,
+      review_count: 1456,
+      medicaid_covered: true,
+      medicare_covered: true,
+      insurance_notes: 'Covered with doctor prescription for fall prevention',
+      user_guide_url: 'https://example.com/grab-bar-installation',
+      video_demo_url: '',
+      tags: ['bathroom', 'safety', 'grab bar', 'fall prevention'],
+      recommended_for: ['Fall prevention', 'Bathroom safety', 'Mobility assistance'],
+      safety_features: ['Secure mounting', 'Weight tested', 'Non-slip grip'],
+      ease_of_use_rating: 5,
+      durability_rating: 5,
+      value_rating: 4,
+      ecc_notes: 'Essential for bathroom safety. Professional installation recommended for optimal security.',
+      date_reviewed: new Date('2024-07-01'),
+      last_updated: new Date('2024-12-01'),
+      isActive: true
+    },
+    {
       id: '6',
       name: 'Resistance Band Therapy Set',
       category: 'Rehabilitation & Therapy',
@@ -266,123 +284,7 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
     setSelectedProduct(null);
   };
 
-  const renderStarRating = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-4 w-4 ${
-              star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-            }`}
-          />
-        ))}
-        <span className="ml-1 text-sm text-gray-600">({rating})</span>
-      </div>
-    );
-  };
 
-  const ProductCard: React.FC<{ product: Product }> = ({ product }) => (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.name}</h3>
-            <p className="text-sm text-gray-600">{product.brand} {product.model && `• ${product.model}`}</p>
-            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-2">
-              {product.category}
-            </span>
-          </div>
-          {isAdmin && (
-            <div className="flex space-x-1">
-              <button
-                onClick={() => handleEditProduct(product)}
-                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-              >
-                <Edit3 className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        <p className="text-gray-700 text-sm mb-4 line-clamp-2">{product.description}</p>
-
-        <div className="space-y-3 mb-4">
-          {product.rating && (
-            <div className="flex items-center justify-between">
-              {renderStarRating(product.rating)}
-              <span className="text-sm text-gray-500">{product.review_count} reviews</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center text-green-600">
-              <DollarSign className="h-4 w-4 mr-1" />
-              <span className="text-sm font-medium">{product.price_range}</span>
-            </div>
-            {(product.medicare_covered || product.medicaid_covered) && (
-              <div className="flex items-center text-blue-600">
-                <Shield className="h-4 w-4 mr-1" />
-                <span className="text-xs">Insurance</span>
-              </div>
-            )}
-          </div>
-
-          {product.recommended_for.length > 0 && (
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Recommended for:</p>
-              <div className="flex flex-wrap gap-1">
-                {product.recommended_for.slice(0, 2).map((item, index) => (
-                  <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                    {item}
-                  </span>
-                ))}
-                {product.recommended_for.length > 2 && (
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                    +{product.recommended_for.length - 2} more
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleViewReviews(product)}
-            className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
-          >
-            <MessageSquare className="h-4 w-4 mr-1" />
-            Reviews ({product.review_count || 3})
-          </button>
-          
-          {product.website && (
-            <a
-              href={product.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4 mr-1" />
-              Learn More
-            </a>
-          )}
-          
-          {product.user_guide_url && (
-            <a
-              href={product.user_guide_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
-            >
-              <FileText className="h-4 w-4 mr-1" />
-              Guide
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 
   if (showAddForm) {
     return (
@@ -545,10 +447,16 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
 
       {/* Products Grid */}
       <div className={`grid gap-6 ${
-        viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
+        viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 max-w-4xl mx-auto'
       }`}>
         {filteredProducts.map(product => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard 
+            key={product.id} 
+            product={product} 
+            onViewReviews={handleViewReviews}
+            onEdit={isAdmin ? handleEditProduct : undefined}
+            isAdmin={isAdmin}
+          />
         ))}
       </div>
 
