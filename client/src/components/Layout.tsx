@@ -124,6 +124,52 @@ export default function Layout() {
               {navigation.map((item) => {
                 const Icon = item.icon
                 const active = isActive(item.href)
+                
+                if (item.hasSubmenu) {
+                  return (
+                    <div key={item.name}>
+                      <button
+                        onClick={() => setResourcesExpanded(!resourcesExpanded)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          active
+                            ? 'bg-blue-100 text-blue-700 shadow-sm'
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                          {item.name}
+                        </div>
+                        {resourcesExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                      {resourcesExpanded && (
+                        <div className="mt-2 ml-6 space-y-1">
+                          {item.submenu?.map((subItem) => (
+                            <Link
+                              key={subItem.name}
+                              to={subItem.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                location.pathname === subItem.href || 
+                                (subItem.href.includes('preferred-products') && location.search.includes('preferred-products'))
+                                  ? 'bg-blue-50 text-blue-600 font-medium'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                              }`}
+                            >
+                              <subItem.icon className="mr-3 h-4 w-4 flex-shrink-0" />
+                              {subItem.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+                
                 return (
                   <Link
                     key={item.name}
@@ -197,6 +243,61 @@ export default function Layout() {
             {navigation.map((item) => {
               const Icon = item.icon
               const active = isActive(item.href)
+              
+              if (item.hasSubmenu) {
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => setResourcesExpanded(!resourcesExpanded)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
+                        active
+                          ? 'bg-blue-100 text-blue-700 shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                      title={!sidebarExpanded ? item.name : undefined}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="h-5 w-5 flex-shrink-0" />
+                        {sidebarExpanded && (
+                          <span className="ml-3 whitespace-nowrap">{item.name}</span>
+                        )}
+                      </div>
+                      {sidebarExpanded && (
+                        resourcesExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )
+                      )}
+                      {!sidebarExpanded && (
+                        <div className="absolute left-16 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                          {item.name}
+                        </div>
+                      )}
+                    </button>
+                    {resourcesExpanded && sidebarExpanded && (
+                      <div className="mt-1 ml-8 space-y-1">
+                        {item.submenu?.map((subItem) => (
+                          <Link
+                            key={subItem.name}
+                            to={subItem.href}
+                            className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                              location.pathname === subItem.href || 
+                              (subItem.href.includes('preferred-products') && location.search.includes('preferred-products'))
+                                ? 'bg-blue-50 text-blue-600 font-medium'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                            }`}
+                          >
+                            <subItem.icon className="mr-3 h-4 w-4 flex-shrink-0" />
+                            <span>{subItem.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              }
+              
               return (
                 <Link
                   key={item.name}
