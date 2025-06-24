@@ -48,8 +48,16 @@ export default function Assessments() {
   }
 
   const getClientName = (clientId: string) => {
+    if (!clientId) {
+      console.log('No client ID provided for assessment')
+      return 'No Client Selected'
+    }
+    
     const client = clients.find(c => c.id === clientId)
-    if (!client) return 'Unknown Client'
+    if (!client) {
+      console.log('Client not found for ID:', clientId, 'Available clients:', clients.map(c => c.id))
+      return 'Unknown Client'
+    }
     return client.preferred_name 
       ? `${client.preferred_name} ${client.last_name}`
       : `${client.first_name} ${client.last_name}`

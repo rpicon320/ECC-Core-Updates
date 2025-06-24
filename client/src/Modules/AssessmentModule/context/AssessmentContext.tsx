@@ -331,12 +331,17 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
     try {
       dispatch({ type: 'SET_SAVING', payload: true })
 
+      // Ensure clientId is available from the basic section data
+      const clientId = state.data.clientId || state.data.sections.basic?.data?.clientId || ''
+      
       const assessmentPayload = {
-        client_id: state.data.clientId,
+        client_id: clientId,
         created_by: state.data.createdBy,
         status,
         ...convertToLegacyFormat(state.data.sections)
       }
+      
+      console.log('Saving assessment with client_id:', clientId)
 
       let savedAssessment
       
@@ -413,7 +418,18 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
 
   const updateField = useCallback((section: SectionKey, field: string, value: unknown) => {
     dispatch({ type: 'UPDATE_FIELD', payload: { section, field, value } })
-  }, [])
+    
+    // If updating clientId in basic section, also update the main clientId
+    if (section === 'basic' && field === 'clientId') {
+      dispatch({
+        type: 'INITIALIZE_ASSESSMENT',
+        payload: {
+          ...state.data,
+          clientId: value as string
+        }
+      })
+    }
+  }, [state.data])
 
   const setCurrentSection = useCallback((section: SectionKey) => {
     dispatch({ type: 'SET_CURRENT_SECTION', payload: section })
