@@ -1,3 +1,9 @@
+export interface RetailerLink {
+  name: string;
+  url: string;
+  is_affiliate?: boolean;
+}
+
 export interface Product {
   id?: string;
   name: string;
@@ -8,6 +14,7 @@ export interface Product {
   features: string[];
   price_range: string;
   where_to_buy: string[];
+  retailer_links?: RetailerLink[];
   website?: string;
   image_url?: string;
   rating?: number;

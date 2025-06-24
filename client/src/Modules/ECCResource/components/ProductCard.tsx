@@ -151,40 +151,69 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
-          {/* Reviews Button */}
-          <button
-            onClick={() => onViewReviews(product)}
-            className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
-          >
-            <MessageSquare className="h-4 w-4 mr-1" />
-            Reviews ({product.review_count || 3})
-          </button>
-          
-          {/* Learn More Button */}
-          {product.website && (
-            <a
-              href={product.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+        <div className="space-y-3">
+          {/* Primary Actions Row */}
+          <div className="flex flex-wrap gap-2">
+            {/* Reviews Button */}
+            <button
+              onClick={() => onViewReviews(product)}
+              className="flex items-center px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
             >
-              <ExternalLink className="h-4 w-4 mr-1" />
-              Learn More
-            </a>
-          )}
-          
-          {/* Guide Button */}
-          {product.user_guide_url && (
-            <a
-              href={product.user_guide_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
-            >
-              <FileText className="h-4 w-4 mr-1" />
-              Guide
-            </a>
+              <MessageSquare className="h-4 w-4 mr-1" />
+              Reviews ({product.review_count || 3})
+            </button>
+            
+            {/* Learn More Button */}
+            {product.website && (
+              <a
+                href={product.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Learn More
+              </a>
+            )}
+            
+            {/* Guide Button */}
+            {product.user_guide_url && (
+              <a
+                href={product.user_guide_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Guide
+              </a>
+            )}
+          </div>
+
+          {/* Retailer Links Row */}
+          {product.retailer_links && product.retailer_links.length > 0 && (
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Shop at:</p>
+              <div className="flex flex-wrap gap-2">
+                {product.retailer_links.slice(0, 3).map((retailer, index) => (
+                  <a
+                    key={index}
+                    href={retailer.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded border border-orange-200 hover:bg-orange-200 transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    {retailer.name}
+                  </a>
+                ))}
+                {product.retailer_links.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                    +{product.retailer_links.length - 3} more
+                  </span>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -13,6 +13,7 @@ import { Product, PRODUCT_CATEGORIES } from '../types/product';
 import { useAuth } from '../../../contexts/AuthContext';
 import ProductReviewSystem from './ProductReviewSystem';
 import ProductCard from './ProductCard';
+import ProductForm from './ProductForm';
 
 interface PreferredProductsProps {
   onClose?: () => void;
@@ -44,6 +45,11 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
       price_range: '$40-60/month',
       where_to_buy: ['Guardian Direct', 'Amazon', 'Best Buy'],
       website: 'https://www.guardianprotection.com',
+      retailer_links: [
+        { name: 'Guardian Direct', url: 'https://www.guardianprotection.com/shop', is_affiliate: false },
+        { name: 'Amazon', url: 'https://amazon.com/guardian-medical-alert', is_affiliate: true },
+        { name: 'Best Buy', url: 'https://bestbuy.com/guardian-alert', is_affiliate: false }
+      ],
       image_url: '',
       rating: 4.5,
       review_count: 1247,
@@ -74,6 +80,11 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
       price_range: '$80-120',
       where_to_buy: ['Amazon', 'Walmart', 'CVS', 'Medical Supply Stores'],
       website: 'https://www.drivemedical.com',
+      retailer_links: [
+        { name: 'Amazon', url: 'https://amazon.com/drive-medical-rollator', is_affiliate: true },
+        { name: 'Walmart', url: 'https://walmart.com/drive-rollator', is_affiliate: false },
+        { name: 'CVS', url: 'https://cvs.com/medical-equipment/rollator', is_affiliate: false }
+      ],
       image_url: '',
       rating: 4.3,
       review_count: 892,
@@ -288,37 +299,15 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
 
   if (showAddForm) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {editingProduct ? 'Edit Product' : 'Add Preferred Product'}
-              </h2>
-              <button
-                onClick={handleCloseForm}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-600">Product form will be implemented here...</p>
-            <div className="mt-4 flex space-x-2">
-              <button
-                onClick={handleCloseForm}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                Save Product
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProductForm
+        product={editingProduct}
+        onSave={(productData) => {
+          console.log('Product saved:', productData);
+          // Here you would typically save to your backend
+          handleCloseForm();
+        }}
+        onCancel={handleCloseForm}
+      />
     );
   }
 
