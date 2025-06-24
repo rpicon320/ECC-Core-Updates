@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { Brain, AlertCircle, CheckCircle, XCircle, Download, Upload, Trash2 } from 'lucide-react'
-import { SectionData, ValidationError } from '../../../../../types/assessment'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { Brain, AlertCircle, Play, Pause, RotateCcw, Check } from 'lucide-react'
+import { SectionData, ValidationError } from '../../../types/assessment'
 
 interface SlumsAssessmentSectionProps {
   sectionData: SectionData
@@ -8,6 +8,339 @@ interface SlumsAssessmentSectionProps {
   onUpdateSection: (data: Partial<SectionData>) => void
   validationErrors: ValidationError[]
   mode: 'edit' | 'view' | 'print'
+}
+
+// Timer Component for Question 6
+const AnimalTimer = ({ isReadOnly }: { isReadOnly: boolean }) => {
+  const [timeLeft, setTimeLeft] = useState(60)
+  const [isRunning, setIsRunning] = useState(false)
+  const [isFinished, setIsFinished] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    // Create audio context for notification sound
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio()
+      // Create a simple beep sound using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+      
+      // Store for later use
+      audioRef.current = { play: () => {
+        const osc = audioContext.createOscillator()
+        const gain = audioContext.createGain()
+        osc.connect(gain)
+        gain.connect(audioContext.destination)
+        osc.frequency.setValueAtTime(800, audioContext.currentTime)
+        gain.gain.setValueAtTime(0.1, audioContext.currentTime)
+        osc.start()
+        osc.stop(audioContext.currentTime + 0.2)
+      }} as any
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isRunning && timeLeft > 0 && !isFinished) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setIsRunning(false)
+            setIsFinished(true)
+            // Play notification sound
+            if (audioRef.current?.play) {
+              audioRef.current.play()
+            }
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [isRunning, timeLeft, isFinished])
+
+  const handleStart = () => {
+    if (!isFinished && timeLeft > 0) {
+      setIsRunning(true)
+    }
+  }
+
+  const handlePause = () => {
+    setIsRunning(false)
+  }
+
+  const handleReset = () => {
+    setIsRunning(false)
+    setIsFinished(false)
+    setTimeLeft(60)
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  if (isReadOnly) return null
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className={`text-2xl font-mono font-bold ${
+            timeLeft <= 10 ? 'text-red-600' : 'text-blue-600'
+          }`}>
+            {formatTime(timeLeft)}
+          </div>
+          {isFinished && (
+            <div className="flex items-center text-green-600 font-medium">
+              <Check className="h-4 w-4 mr-1" />
+              Time Complete
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleStart}
+            disabled={isRunning || isFinished || timeLeft === 0}
+            className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+          >
+            <Play className="h-4 w-4 mr-1" />
+            Start
+          </button>
+          
+          <button
+            onClick={handlePause}
+            disabled={!isRunning}
+            className="flex items-center px-3 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+          >
+            <Pause className="h-4 w-4 mr-1" />
+            Pause
+          </button>
+          
+          <button
+            onClick={handleReset}
+            className="flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Reset
+          </button>
+        </div>
+      </div>
+      
+      <p className="text-xs text-blue-600 mt-2">
+        Timer will automatically stop at 60 seconds with audio notification
+      </p>
+    </div>
+  )
+}
+
+// Drawing Canvas Component
+const DrawingCanvas = ({ 
+  width = 300, 
+  height = 300, 
+  value, 
+  onChange, 
+  isReadOnly,
+  shape = 'circle',
+  className = ''
+}: {
+  width?: number
+  height?: number
+  value?: string
+  onChange?: (value: string) => void
+  isReadOnly: boolean
+  shape?: 'circle' | 'triangle'
+  className?: string
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [context, setContext] = useState<CanvasRenderingContext2D | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    setContext(ctx)
+    
+    // Set canvas size
+    canvas.width = width
+    canvas.height = height
+    
+    // Draw background and shape outline
+    ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, width, height)
+    
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = 2
+    
+    if (shape === 'circle') {
+      ctx.beginPath()
+      ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, 0, 2 * Math.PI)
+      ctx.stroke()
+    } else if (shape === 'triangle') {
+      ctx.beginPath()
+      ctx.moveTo(width / 2, 20)
+      ctx.lineTo(20, height - 20)
+      ctx.lineTo(width - 20, height - 20)
+      ctx.closePath()
+      ctx.stroke()
+    }
+    
+    // Load existing drawing if available
+    if (value) {
+      const img = new Image()
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0)
+      }
+      img.src = value
+    }
+  }, [width, height, shape, value])
+
+  const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (isReadOnly || !context) return
+    
+    setIsDrawing(true)
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    let clientX, clientY
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+
+    context.beginPath()
+    context.moveTo(x, y)
+    context.strokeStyle = 'black'
+    context.lineWidth = 2
+    context.lineCap = 'round'
+  }, [isReadOnly, context])
+
+  const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || isReadOnly || !context) return
+    
+    e.preventDefault()
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    let clientX, clientY
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+
+    context.lineTo(x, y)
+    context.stroke()
+  }, [isDrawing, isReadOnly, context])
+
+  const stopDrawing = useCallback(() => {
+    if (!isDrawing) return
+    
+    setIsDrawing(false)
+    
+    // Save drawing as base64
+    if (canvasRef.current && onChange) {
+      const dataURL = canvasRef.current.toDataURL()
+      onChange(dataURL)
+    }
+  }, [isDrawing, onChange])
+
+  const clearCanvas = () => {
+    if (isReadOnly || !context) return
+    
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // Clear and redraw background/outline
+    context.fillStyle = 'white'
+    context.fillRect(0, 0, width, height)
+    
+    context.strokeStyle = 'black'
+    context.lineWidth = 2
+    
+    if (shape === 'circle') {
+      context.beginPath()
+      context.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, 0, 2 * Math.PI)
+      context.stroke()
+    } else if (shape === 'triangle') {
+      context.beginPath()
+      context.moveTo(width / 2, 20)
+      context.lineTo(20, height - 20)
+      context.lineTo(width - 20, height - 20)
+      context.closePath()
+      context.stroke()
+    }
+    
+    if (onChange) {
+      onChange('')
+    }
+  }
+
+  return (
+    <div className={`border border-gray-300 rounded-lg p-4 bg-white ${className}`}>
+      <canvas
+        ref={canvasRef}
+        className="border border-gray-400 cursor-crosshair touch-none"
+        style={{ touchAction: 'none' }}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+      />
+      {!isReadOnly && (
+        <button
+          onClick={clearCanvas}
+          className="mt-2 px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
+        >
+          Clear
+        </button>
+      )}
+    </div>
+  )
 }
 
 export default function SlumsAssessmentSection({
@@ -18,138 +351,68 @@ export default function SlumsAssessmentSection({
 }: SlumsAssessmentSectionProps) {
   const data = sectionData.data
   const isReadOnly = mode === 'view' || mode === 'print'
-  
-  // State for drawing canvas
-  const [isDrawingClock, setIsDrawingClock] = useState(false)
-  const [isDrawingTriangle, setIsDrawingTriangle] = useState(false)
-  
-  // Education level options
-  const educationLevels = [
-    'High School Graduate',
-    'Less than High School'
-  ]
-  
+
   // Calculate total score
   const calculateTotalScore = () => {
-    let total = 0
+    const scores = [
+      data.slums_q1_score,
+      data.slums_q2_score,
+      data.slums_q3_score,
+      data.slums_q5_spent_score,
+      data.slums_q5_left_score,
+      data.slums_q6_score,
+      data.slums_q7_score,
+      data.slums_q8_649_score,
+      data.slums_q8_8537_score,
+      data.slums_q9_score,
+      data.slums_q10_x_score,
+      data.slums_q10_largest_score,
+      data.slums_q11_name_score,
+      data.slums_q11_work_score,
+      data.slums_q11_when_score,
+      data.slums_q11_state_score
+    ]
     
-    // Add up all the individual question scores
-    total += (data.slums_q1_score as number) || 0
-    total += (data.slums_q2_score as number) || 0
-    total += (data.slums_q3_score as number) || 0
-    total += (data.slums_q5_spent_score as number) || 0
-    total += (data.slums_q5_left_score as number) || 0
-    total += (data.slums_q6_score as number) || 0
-    total += (data.slums_q7_score as number) || 0
-    
-    // Q8 - Numbers backward
-    if (data.slums_q8_649_correct) total += 1
-    if (data.slums_q8_8537_correct) total += 2
-    
-    // Q9 - Clock drawing
-    total += (data.slums_q9_score as number) || 0
-    
-    // Q10 - Triangle
-    if (data.slums_q10_x_correct) total += 1
-    if (data.slums_q10_largest_correct) total += 1
-    
-    // Q11 - Story recall
-    total += (data.slums_q11_name_score as number) || 0
-    total += (data.slums_q11_work_score as number) || 0
-    total += (data.slums_q11_when_score as number) || 0
-    total += (data.slums_q11_state_score as number) || 0
-    
-    return total
+    return scores.reduce((total, score) => total + (Number(score) || 0), 0)
   }
-  
-  // Get interpretation based on score and education level
-  const getInterpretation = (score: number) => {
-    const educationLevel = data.cognitive_education_level as string
-    
+
+  const getInterpretation = (score: number, educationLevel: string) => {
     if (educationLevel === 'High School Graduate') {
       if (score >= 27) return 'Normal'
-      if (score >= 21 && score <= 26) return 'Mild Neurocognitive Disorder'
+      if (score >= 21) return 'Mild Neurocognitive Disorder'
       return 'Dementia'
     } else {
-      // Less than high school education
       if (score >= 25) return 'Normal'
-      if (score >= 20 && score <= 24) return 'Mild Neurocognitive Disorder'
+      if (score >= 20) return 'Mild Neurocognitive Disorder'
       return 'Dementia'
     }
   }
-  
+
   const totalScore = calculateTotalScore()
-  const interpretation = getInterpretation(totalScore)
-  
-  // Update total score and interpretation when component renders
-  React.useEffect(() => {
-    onUpdateField('cognitive_slums_total_score', totalScore)
-    onUpdateField('cognitive_slums_interpretation', interpretation)
-  }, [totalScore, interpretation])
-  
-  // Handle score changes for individual questions
-  const handleScoreChange = (questionKey: string, score: number) => {
-    onUpdateField(questionKey, score)
-  }
-  
-  // Toggle correct/incorrect for yes/no questions
-  const handleCorrectToggle = (questionKey: string, isCorrect: boolean) => {
-    onUpdateField(questionKey, isCorrect)
-  }
-  
-  // Handle file upload for drawings
-  const handleDrawingUpload = (questionKey: string, file: File) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string
-      onUpdateField(questionKey, base64)
-    }
-    reader.readAsDataURL(file)
-  }
-  
-  // Remove drawing
-  const handleRemoveDrawing = (questionKey: string) => {
-    onUpdateField(questionKey, '')
-  }
-  
-  // Handle recalled objects for Q7
-  const handleRecalledObjectChange = (index: number, value: string) => {
-    const currentObjects = [...((data.slums_q7_objects_recalled as string[]) || [])]
-    currentObjects[index] = value
-    onUpdateField('slums_q7_objects_recalled', currentObjects)
+  const interpretation = getInterpretation(totalScore, data.cognitive_education_level as string || '')
+
+  // Handle word recall checkboxes
+  const handleRecallChange = (word: string, checked: boolean) => {
+    const currentRecalled = (data.slums_q7_objects_recalled as string[]) || []
+    const newRecalled = checked
+      ? [...currentRecalled, word]
+      : currentRecalled.filter(w => w !== word)
     
-    // Calculate score based on number of correctly recalled objects
-    const score = currentObjects.filter(obj => obj.trim()).length
-    onUpdateField('slums_q7_score', score)
+    onUpdateField('slums_q7_objects_recalled', newRecalled)
+    onUpdateField('slums_q7_score', newRecalled.length)
   }
-  
-  // Add recalled object input
-  const addRecalledObject = () => {
-    const currentObjects = [...((data.slums_q7_objects_recalled as string[]) || [])]
-    if (currentObjects.length < 5) {
-      onUpdateField('slums_q7_objects_recalled', [...currentObjects, ''])
-    }
-  }
-  
-  // Remove recalled object input
-  const removeRecalledObject = (index: number) => {
-    const currentObjects = [...((data.slums_q7_objects_recalled as string[]) || [])]
-    const updatedObjects = currentObjects.filter((_, i) => i !== index)
-    onUpdateField('slums_q7_objects_recalled', updatedObjects)
-    
-    // Update score
-    const score = updatedObjects.filter(obj => obj.trim()).length
-    onUpdateField('slums_q7_score', score)
-  }
-  
+
+  const recallWords = ['Apple', 'Pen', 'Tie', 'House', 'Car']
+  const recalledWords = (data.slums_q7_objects_recalled as string[]) || []
+
   return (
     <div className="p-6 space-y-8">
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <Brain className="h-6 w-6 mr-2 text-indigo-500" />
-          SLUMS Examination (Saint Louis University Mental Status)
+          SLUMS Assessment
         </h2>
-        
+
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -164,1284 +427,756 @@ export default function SlumsAssessmentSection({
             </ul>
           </div>
         )}
-        
+
         {/* Education Level */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Education Level</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select education level:
-              </label>
-              <div className="flex items-center space-x-6">
-                {educationLevels.map((level) => (
-                  <label key={level} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="cognitive_education_level"
-                      value={level}
-                      checked={data.cognitive_education_level === level}
-                      onChange={() => onUpdateField('cognitive_education_level', level)}
-                      disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
-                        isReadOnly ? 'cursor-not-allowed' : ''
-                      }`}
-                    />
-                    <span className="ml-2 text-sm text-gray-700">{level}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+        <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Client's Education Level
+          </label>
+          <select
+            value={data.cognitive_education_level as string || ''}
+            onChange={(e) => onUpdateField('cognitive_education_level', e.target.value)}
+            disabled={isReadOnly}
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+              isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+            }`}
+          >
+            <option value="">Select education level</option>
+            <option value="High School Graduate">High School Graduate</option>
+            <option value="Less than High School">Less than High School</option>
+          </select>
         </div>
-        
-        {/* Question 1: Day */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">1. What day of the week is it?</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q1_day_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q1_day_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter day of week"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-1):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q1_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q1_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q1_score', 1)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q1_score as number) === 1
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (1)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Question 2: Year */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">2. What is the year?</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q2_year_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q2_year_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter year"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-1):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q2_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q2_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q2_score', 1)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q2_score as number) === 1
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (1)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Question 3: State */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">3. What state are we in?</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q3_state_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q3_state_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter state"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-1):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q3_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q3_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q3_score', 1)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q3_score as number) === 1
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (1)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Question 4: Memory Task (no scoring) */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">4. Memory Task</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-blue-50">
-              <p className="text-blue-800 mb-4">
-                <strong>Instructions:</strong> I am going to say five objects for you to remember. 
-                Please repeat them after I have said all five.
-              </p>
-              <ul className="list-disc list-inside text-blue-700 mb-4">
-                <li>Apple</li>
-                <li>Pen</li>
-                <li>Tie</li>
-                <li>House</li>
-                <li>Car</li>
-              </ul>
-              <p className="text-blue-800 italic">
-                Note: You may repeat objects until patient can repeat all 5, but only count as one trial.
-                Do not score this item - it is a registration task only.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Question 5: Math */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">5. Math Questions</h3>
-          <div className="space-y-4">
-            {/* Q5a: How much is $100 minus $7? */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                5a. How much is $100 minus $7?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q5_spent_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q5_spent_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-1):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q5_spent_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q5_spent_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q5_spent_score', 1)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q5_spent_score as number) === 1
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (1)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Q5b: And keep subtracting $7... */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                5b. And keep subtracting $7, how much is left now?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q5_left_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q5_left_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-2):
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q5_left_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q5_left_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      0 correct
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q5_left_score', 1)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q5_left_score as number) === 1
-                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      1 correct (1)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q5_left_score', 2)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q5_left_score as number) === 2
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      2-4 correct (2)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Question 6: Animal Naming */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">6. Animal Naming</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                Name as many animals as you can in 1 minute.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of animals:
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="30"
-                    value={data.slums_q6_animals_count as number || 0}
-                    onChange={(e) => onUpdateField('slums_q6_animals_count', parseInt(e.target.value) || 0)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-3):
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q6_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q6_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      0-4 (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q6_score', 1)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q6_score as number) === 1
-                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      5-9 (1)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q6_score', 2)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q6_score as number) === 2
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      10-14 (2)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q6_score', 3)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q6_score as number) === 3
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      15+ (3)
-                    </button>
-                  </div>
-                </div>
-              </div>
+
+        {/* Question 1: Day of Week */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">1. What day of the week is it? (1 point)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Client's Answer</label>
+              <select
+                value={data.slums_q1_day_answer as string || ''}
+                onChange={(e) => {
+                  onUpdateField('slums_q1_day_answer', e.target.value)
+                  const isCorrect = e.target.value === new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                  onUpdateField('slums_q1_score', isCorrect ? 1 : 0)
+                }}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+              >
+                <option value="">Select day</option>
+                <option value="Sunday">Sunday</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Other">Other</option>
+              </select>
               
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Animals named (optional):
-                </label>
-                <textarea
-                  value={data.slums_q6_animals_list as string || ''}
-                  onChange={(e) => onUpdateField('slums_q6_animals_list', e.target.value)}
+              {data.slums_q1_day_answer === 'Other' && (
+                <input
+                  type="text"
+                  placeholder="Please specify"
+                  value={data.slums_q1_day_other as string || ''}
+                  onChange={(e) => onUpdateField('slums_q1_day_other', e.target.value)}
                   disabled={isReadOnly}
-                  rows={3}
+                  className={`mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+              <select
+                value={data.slums_q1_score as number || 0}
+                onChange={(e) => onUpdateField('slums_q1_score', parseInt(e.target.value))}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+              >
+                <option value={0}>0</option>
+                <option value={1}>1</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Question 2: Year */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">2. What is the year? (1 point)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Client's Answer</label>
+              <input
+                type="text"
+                value={data.slums_q2_year_answer as string || ''}
+                onChange={(e) => {
+                  onUpdateField('slums_q2_year_answer', e.target.value)
+                  const currentYear = new Date().getFullYear().toString()
+                  const isCorrect = e.target.value === currentYear
+                  onUpdateField('slums_q2_score', isCorrect ? 1 : 0)
+                }}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+                placeholder="Enter year"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+              <select
+                value={data.slums_q2_score as number || 0}
+                onChange={(e) => onUpdateField('slums_q2_score', parseInt(e.target.value))}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+              >
+                <option value={0}>0</option>
+                <option value={1}>1</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Question 3: State */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">3. What state are we in? (1 point)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Client's Answer</label>
+              <input
+                type="text"
+                value={data.slums_q3_state_answer as string || ''}
+                onChange={(e) => onUpdateField('slums_q3_state_answer', e.target.value)}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+                placeholder="Enter state"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+              <select
+                value={data.slums_q3_score as number || 0}
+                onChange={(e) => onUpdateField('slums_q3_score', parseInt(e.target.value))}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+              >
+                <option value={0}>0</option>
+                <option value={1}>1</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Question 4: Registration */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">4. Please remember these five objects. I will ask you what they are later.</h3>
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <p className="text-lg font-medium text-center">Apple, Pen, Tie, House, Car</p>
+            <p className="text-sm text-gray-600 mt-2 text-center">Read objects clearly. No scoring for this question.</p>
+          </div>
+        </div>
+
+        {/* Question 5: Math */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">5. You had $100 and you spent $23. How much do you have left?</h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  How much did you spend? <span className="text-blue-600 font-semibold">($23)</span> (1 point)
+                </label>
+                <input
+                  type="text"
+                  value={data.slums_q5_spent_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q5_spent_answer', e.target.value)
+                    const isCorrect = e.target.value.includes('23')
+                    onUpdateField('slums_q5_spent_score', isCorrect ? 1 : 0)
+                  }}
+                  disabled={isReadOnly}
                   className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
                     isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                   }`}
-                  placeholder="List animals named (optional)"
+                  placeholder="Client's answer"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <select
+                  value={data.slums_q5_spent_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q5_spent_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                </select>
+              </div>
             </div>
-          </div>
-        </div>
-        
-        {/* Question 7: Memory Recall */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">7. Memory Recall</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                What were the five objects I asked you to remember earlier?
-              </p>
-              
-              <div className="space-y-3">
-                {/* Recalled objects inputs */}
-                {((data.slums_q7_objects_recalled as string[]) || []).map((object, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={object}
-                      onChange={(e) => handleRecalledObjectChange(index, e.target.value)}
-                      disabled={isReadOnly}
-                      className={`flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                        isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                      }`}
-                      placeholder={`Recalled object ${index + 1}`}
-                    />
-                    {!isReadOnly && (
-                      <button
-                        type="button"
-                        onClick={() => removeRecalledObject(index)}
-                        className="text-red-600 hover:text-red-800 p-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                
-                {/* Add object button */}
-                {!isReadOnly && ((data.slums_q7_objects_recalled as string[]) || []).length < 5 && (
-                  <button
-                    type="button"
-                    onClick={addRecalledObject}
-                    className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                  >
-                    + Add recalled object
-                  </button>
-                )}
-                
-                {/* Score display */}
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900">
-                    Score: {(data.slums_q7_score as number) || 0} / 5
-                  </p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    1 point for each correctly recalled object (max 5)
-                  </p>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  How much do you have left? <span className="text-blue-600 font-semibold">($77)</span> (2 points)
+                </label>
+                <input
+                  type="text"
+                  value={data.slums_q5_left_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q5_left_answer', e.target.value)
+                    const isCorrect = e.target.value.includes('77')
+                    onUpdateField('slums_q5_left_score', isCorrect ? 2 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <select
+                  value={data.slums_q5_left_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q5_left_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                </select>
               </div>
             </div>
           </div>
         </div>
-        
+
+        {/* Question 6: Animals with Timer */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">6. You have 1 minute. Tell me as many animals as you can. (3 points)</h3>
+          
+          <AnimalTimer isReadOnly={isReadOnly} />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Number of Animals</label>
+              <input
+                type="number"
+                min="0"
+                value={data.slums_q6_animals_count as number || 0}
+                onChange={(e) => {
+                  const count = parseInt(e.target.value) || 0
+                  onUpdateField('slums_q6_animals_count', count)
+                  // Score: 0-4 animals = 0 points, 5-9 = 1 point, 10-14 = 2 points, 15+ = 3 points
+                  let score = 0
+                  if (count >= 15) score = 3
+                  else if (count >= 10) score = 2
+                  else if (count >= 5) score = 1
+                  onUpdateField('slums_q6_score', score)
+                }}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+              <select
+                value={data.slums_q6_score as number || 0}
+                onChange={(e) => onUpdateField('slums_q6_score', parseInt(e.target.value))}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+              >
+                <option value={0}>0</option>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="mt-2 text-sm text-gray-600">
+            <p>Scoring: 0-4 animals = 0 points, 5-9 = 1 point, 10-14 = 2 points, 15+ = 3 points</p>
+          </div>
+        </div>
+
+        {/* Question 7: Word Recall */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">7. What were those five objects I asked you to remember? (5 points)</h3>
+          
+          <div className="space-y-3">
+            {recallWords.map((word) => (
+              <label key={word} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={recalledWords.includes(word)}
+                  onChange={(e) => handleRecallChange(word, e.target.checked)}
+                  disabled={isReadOnly}
+                  className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                    isReadOnly ? 'cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className="ml-2 text-sm text-gray-700">{word}</span>
+              </label>
+            ))}
+          </div>
+          
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm font-medium text-blue-900">
+              Objects Recalled: {recalledWords.length} / 5 (Score: {recalledWords.length} points)
+            </p>
+          </div>
+        </div>
+
         {/* Question 8: Numbers Backward */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">8. Numbers Backward</h3>
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">8. I am going to give you a series of numbers and I want you to give them to me backwards.</h3>
+          
           <div className="space-y-4">
-            {/* 8a: 87 */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                8a. I am going to give you a series of numbers and I would like you to give them to me backwards. 
-                For example, if I say 42, you would say 24.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    87 (Practice - not scored)
-                  </label>
+            <div>
+              <p className="text-sm text-gray-600 mb-2">87 (Practice - 0 points)</p>
+              <input
+                type="text"
+                value={data.slums_q8_87_answer as string || ''}
+                onChange={(e) => onUpdateField('slums_q8_87_answer', e.target.value)}
+                disabled={isReadOnly}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+                placeholder="Client's answer"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">649 (1 point)</p>
+                <input
+                  type="text"
+                  value={data.slums_q8_649_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q8_649_answer', e.target.value)
+                    const isCorrect = e.target.value.trim() === '946'
+                    onUpdateField('slums_q8_649_correct', isCorrect)
+                    onUpdateField('slums_q8_649_score', isCorrect ? 1 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
+              </div>
+              <div>
+                <label className="flex items-center mt-6">
                   <input
-                    type="text"
-                    value={data.slums_q8_87_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q8_87_answer', e.target.value)}
+                    type="checkbox"
+                    checked={data.slums_q8_649_correct as boolean || false}
+                    onChange={(e) => {
+                      onUpdateField('slums_q8_649_correct', e.target.checked)
+                      onUpdateField('slums_q8_649_score', e.target.checked ? 1 : 0)
+                    }}
                     disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                      isReadOnly ? 'cursor-not-allowed' : ''
                     }`}
-                    placeholder="Enter answer"
                   />
-                </div>
+                  <span className="ml-2 text-sm text-gray-700">Correct (946)</span>
+                </label>
               </div>
             </div>
-            
-            {/* 8b: 649 */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                8b. 649
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q8_649_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q8_649_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correct? (1 point)
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleCorrectToggle('slums_q8_649_correct', false)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        data.slums_q8_649_correct === false
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCorrectToggle('slums_q8_649_correct', true)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        data.slums_q8_649_correct === true
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct
-                    </button>
-                  </div>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">8537 (2 points)</p>
+                <input
+                  type="text"
+                  value={data.slums_q8_8537_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q8_8537_answer', e.target.value)
+                    const isCorrect = e.target.value.trim() === '7358'
+                    onUpdateField('slums_q8_8537_correct', isCorrect)
+                    onUpdateField('slums_q8_8537_score', isCorrect ? 2 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
               </div>
-            </div>
-            
-            {/* 8c: 8537 */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                8c. 8537
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
+              <div>
+                <label className="flex items-center mt-6">
                   <input
-                    type="text"
-                    value={data.slums_q8_8537_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q8_8537_answer', e.target.value)}
+                    type="checkbox"
+                    checked={data.slums_q8_8537_correct as boolean || false}
+                    onChange={(e) => {
+                      onUpdateField('slums_q8_8537_correct', e.target.checked)
+                      onUpdateField('slums_q8_8537_score', e.target.checked ? 2 : 0)
+                    }}
                     disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                      isReadOnly ? 'cursor-not-allowed' : ''
                     }`}
-                    placeholder="Enter answer"
                   />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correct? (2 points)
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleCorrectToggle('slums_q8_8537_correct', false)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        data.slums_q8_8537_correct === false
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCorrectToggle('slums_q8_8537_correct', true)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        data.slums_q8_8537_correct === true
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct
-                    </button>
-                  </div>
-                </div>
+                  <span className="ml-2 text-sm text-gray-700">Correct (7358)</span>
+                </label>
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Question 9: Clock Drawing */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">9. Clock Drawing</h3>
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                This is a clock face. Please put in the hour markers and the time at 10 minutes to 11 o'clock.
-              </p>
-              
-              {/* Clock Drawing Upload/Display */}
-              <div className="mb-4">
-                {data.slums_q9_clock_drawing ? (
-                  <div className="relative inline-block">
-                    <img 
-                      src={data.slums_q9_clock_drawing as string}
-                      alt="Clock drawing"
-                      className="max-w-full h-auto border border-gray-300 rounded-lg"
-                      style={{ maxHeight: '200px' }}
-                    />
-                    {!isReadOnly && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDrawing('slums_q9_clock_drawing')}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  !isReadOnly && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-4">Upload a photo of the clock drawing</p>
-                      <div className="flex justify-center space-x-4">
-                        <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                          <span>Upload Image</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleDrawingUpload('slums_q9_clock_drawing', e.target.files[0])}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setIsDrawingClock(true)}
-                          className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
-                        >
-                          Draw Now
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-              
-              {/* Clock Drawing Score */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">9. This is a clock face. Please put in the hour markers and the time at ten minutes to eleven o'clock. (4 points)</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <DrawingCanvas
+                width={300}
+                height={300}
+                value={data.slums_q9_clock_drawing as string}
+                onChange={(value) => onUpdateField('slums_q9_clock_drawing', value)}
+                isReadOnly={isReadOnly}
+                shape="circle"
+              />
+            </div>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Score (0-4):
-                </label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleScoreChange('slums_q9_score', 0)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      (data.slums_q9_score as number) === 0
-                        ? 'bg-red-100 text-red-700 border border-red-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    0 points
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleScoreChange('slums_q9_score', 1)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      (data.slums_q9_score as number) === 1
-                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    1 point
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleScoreChange('slums_q9_score', 2)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      (data.slums_q9_score as number) === 2
-                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    2 points
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleScoreChange('slums_q9_score', 3)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      (data.slums_q9_score as number) === 3
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    3 points
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleScoreChange('slums_q9_score', 4)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      (data.slums_q9_score as number) === 4
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    4 points
-                  </button>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score (0-4 points)</label>
+                <select
+                  value={data.slums_q9_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q9_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                </select>
               </div>
-              
-              <div className="mt-3 text-xs text-gray-600">
-                <p><strong>Scoring guide:</strong></p>
-                <ul className="list-disc list-inside space-y-1 mt-1">
-                  <li>Hour markers only = 1 point</li>
-                  <li>Time correct = 2 points</li>
-                  <li>Hour markers and time correct = 4 points</li>
-                </ul>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Scoring Criteria:</strong></p>
+                <p>• Hour markers present (2 points)</p>
+                <p>• Time correctly set to 10:50 (2 points)</p>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Question 10: Visual-Spatial */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">10. Visual-Spatial Task</h3>
-          <div className="space-y-4">
-            {/* 10a: Place X in Triangle */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                10a. Place an X in the triangle.
-              </p>
-              
-              {/* Triangle Drawing Upload/Display */}
-              <div className="mb-4">
-                {data.slums_q10_triangle_drawing ? (
-                  <div className="relative inline-block">
-                    <img 
-                      src={data.slums_q10_triangle_drawing as string}
-                      alt="Triangle drawing"
-                      className="max-w-full h-auto border border-gray-300 rounded-lg"
-                      style={{ maxHeight: '200px' }}
-                    />
-                    {!isReadOnly && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDrawing('slums_q10_triangle_drawing')}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  !isReadOnly && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-4">Upload a photo of the triangle drawing</p>
-                      <div className="flex justify-center space-x-4">
-                        <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                          <span>Upload Image</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleDrawingUpload('slums_q10_triangle_drawing', e.target.files[0])}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setIsDrawingTriangle(true)}
-                          className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
-                        >
-                          Draw Now
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
+
+        {/* Question 10A: Triangle Drawing */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">10 A. Please place an X in the triangle. (1 point)</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <DrawingCanvas
+                width={300}
+                height={300}
+                value={data.slums_q10_triangle_drawing as string}
+                onChange={(value) => onUpdateField('slums_q10_triangle_drawing', value)}
+                isReadOnly={isReadOnly}
+                shape="triangle"
+              />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={data.slums_q10_x_correct as boolean || false}
+                  onChange={(e) => {
+                    onUpdateField('slums_q10_x_correct', e.target.checked)
+                    onUpdateField('slums_q10_x_score', e.target.checked ? 1 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                    isReadOnly ? 'cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className="ml-2 text-sm text-gray-700">X correctly placed in triangle (1 point)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Question 10B: Shape Recognition */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">10 B. Which number represents the largest shape? (1 point)</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex items-center justify-center space-x-8 p-6 bg-gray-50 rounded-lg">
+              {/* Square - Largest (25% bigger) */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-500 border-2 border-black mx-auto mb-2"></div>
+                <span className="text-lg font-bold">1</span>
               </div>
               
-              {/* X in Triangle Score */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  X in Triangle Correct? (1 point)
-                </label>
-                <div className="flex items-center space-x-4">
-                  <button
-                    type="button"
-                    onClick={() => handleCorrectToggle('slums_q10_x_correct', false)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      data.slums_q10_x_correct === false
-                        ? 'bg-red-100 text-red-700 border border-red-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Incorrect
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCorrectToggle('slums_q10_x_correct', true)}
-                    disabled={isReadOnly}
-                    className={`flex items-center px-3 py-2 rounded-md ${
-                      data.slums_q10_x_correct === true
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Correct
-                  </button>
+              {/* Triangle */}
+              <div className="text-center">
+                <div className="relative w-12 h-12 mx-auto mb-2">
+                  <div 
+                    className="absolute inset-0 bg-green-500 border-2 border-black"
+                    style={{
+                      clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+                    }}
+                  ></div>
                 </div>
+                <span className="text-lg font-bold">2</span>
+              </div>
+              
+              {/* Rectangle */}
+              <div className="text-center">
+                <div className="w-12 h-8 bg-red-500 border-2 border-black mx-auto mb-2"></div>
+                <span className="text-lg font-bold">3</span>
               </div>
             </div>
             
-            {/* 10b: Which figure is largest? */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                10b. Which of these figures is largest?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q10_largest_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q10_largest_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correct? (1 point)
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleCorrectToggle('slums_q10_largest_correct', false)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        data.slums_q10_largest_correct === false
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCorrectToggle('slums_q10_largest_correct', true)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        data.slums_q10_largest_correct === true
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct
-                    </button>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client's Answer</label>
+                <input
+                  type="text"
+                  value={data.slums_q10_largest_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q10_largest_answer', e.target.value)
+                    const isCorrect = e.target.value.trim() === '1'
+                    onUpdateField('slums_q10_largest_correct', isCorrect)
+                    onUpdateField('slums_q10_largest_score', isCorrect ? 1 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Enter number (1, 2, or 3)"
+                />
               </div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={data.slums_q10_largest_correct as boolean || false}
+                  onChange={(e) => {
+                    onUpdateField('slums_q10_largest_correct', e.target.checked)
+                    onUpdateField('slums_q10_largest_score', e.target.checked ? 1 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                    isReadOnly ? 'cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className="ml-2 text-sm text-gray-700">Correct (Answer: 1)</span>
+              </label>
             </div>
           </div>
         </div>
-        
+
         {/* Question 11: Story Recall */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">11. Story Recall</h3>
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">11. I am going to tell you a story. Please listen carefully because afterwards, I'm going to ask you some questions about it.</h3>
+          
+          <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+            <p className="text-sm font-medium">
+              "Jill was a very successful stockbroker. She made a lot of money on the stock market. She then met Jack, a devastatingly handsome man. She married him and had three children. They lived in Chicago. She then stopped work and stayed home to bring up her children. When they were teenagers, she went back to work. She and Jack lived happily ever after."
+            </p>
+          </div>
+
           <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-blue-50 mb-4">
-              <p className="text-blue-800 mb-4">
-                <strong>Instructions:</strong> I am going to tell you a story. Please listen carefully because afterwards, 
-                I'm going to ask you some questions about it.
-              </p>
-              <p className="text-blue-800 font-medium">
-                Jill was a very successful stockbroker. She made a lot of money on the stock market. 
-                She then met Jack, a devastatingly handsome man. She married him and had three children. 
-                They lived in Chicago. She then stopped work and stayed at home to bring up her children. 
-                When they were teenagers, she went back to work. She and Jack lived happily ever after.
-              </p>
-            </div>
-            
-            {/* 11a: What was the woman's name? */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                11a. What was the woman's name?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q11_name_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q11_name_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-2):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_name_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_name_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_name_score', 2)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_name_score as number) === 2
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (2)
-                    </button>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">What was the female's name? <span className="text-blue-600 font-semibold">(Jill)</span> (2 points)</label>
+                <input
+                  type="text"
+                  value={data.slums_q11_name_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q11_name_answer', e.target.value)
+                    const isCorrect = e.target.value.toLowerCase().includes('jill')
+                    onUpdateField('slums_q11_name_score', isCorrect ? 2 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <select
+                  value={data.slums_q11_name_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q11_name_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                </select>
               </div>
             </div>
-            
-            {/* 11b: What work did she do? */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                11b. What work did she do?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q11_work_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q11_work_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-2):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_work_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_work_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_work_score', 2)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_work_score as number) === 2
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (2)
-                    </button>
-                  </div>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">When did she go back to work? <span className="text-blue-600 font-semibold">(When they were teenagers)</span> (2 points)</label>
+                <input
+                  type="text"
+                  value={data.slums_q11_when_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q11_when_answer', e.target.value)
+                    const answer = e.target.value.toLowerCase()
+                    const isCorrect = answer.includes('teenager') || answer.includes('teens')
+                    onUpdateField('slums_q11_when_score', isCorrect ? 2 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <select
+                  value={data.slums_q11_when_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q11_when_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                </select>
               </div>
             </div>
-            
-            {/* 11c: When did she go back to work? */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                11c. When did she go back to work?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q11_when_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q11_when_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-2):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_when_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_when_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_when_score', 2)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_when_score as number) === 2
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (2)
-                    </button>
-                  </div>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">What work did she do? <span className="text-blue-600 font-semibold">(Stockbroker)</span> (2 points)</label>
+                <input
+                  type="text"
+                  value={data.slums_q11_work_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q11_work_answer', e.target.value)
+                    const isCorrect = e.target.value.toLowerCase().includes('stockbroker') || e.target.value.toLowerCase().includes('stock broker')
+                    onUpdateField('slums_q11_work_score', isCorrect ? 2 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <select
+                  value={data.slums_q11_work_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q11_work_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                </select>
               </div>
             </div>
-            
-            {/* 11d: What state did she live in? */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                11d. What state did she live in?
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Answer:
-                  </label>
-                  <input
-                    type="text"
-                    value={data.slums_q11_state_answer as string || ''}
-                    onChange={(e) => onUpdateField('slums_q11_state_answer', e.target.value)}
-                    disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Enter answer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Score (0-2):
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_state_score', 0)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_state_score as number) === 0
-                          ? 'bg-red-100 text-red-700 border border-red-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Incorrect (0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange('slums_q11_state_score', 2)}
-                      disabled={isReadOnly}
-                      className={`flex items-center px-3 py-2 rounded-md ${
-                        (data.slums_q11_state_score as number) === 2
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Correct (2)
-                    </button>
-                  </div>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">What state did she live in? <span className="text-blue-600 font-semibold">(Chicago/Illinois)</span> (2 points)</label>
+                <input
+                  type="text"
+                  value={data.slums_q11_state_answer as string || ''}
+                  onChange={(e) => {
+                    onUpdateField('slums_q11_state_answer', e.target.value)
+                    const answer = e.target.value.toLowerCase()
+                    const isCorrect = answer.includes('chicago') || answer.includes('illinois')
+                    onUpdateField('slums_q11_state_score', isCorrect ? 2 : 0)
+                  }}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Client's answer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <select
+                  value={data.slums_q11_state_score as number || 0}
+                  onChange={(e) => onUpdateField('slums_q11_state_score', parseInt(e.target.value))}
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                </select>
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Total Score and Interpretation */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">SLUMS Total Score and Interpretation</h3>
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="text-center">
-                  <p className="text-sm font-medium text-blue-800 mb-2">Total Score</p>
-                  <div className="text-4xl font-bold text-blue-600">{totalScore} / 30</div>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-sm font-medium text-blue-800 mb-2">Interpretation</p>
-                  <div className={`text-xl font-semibold ${
-                    interpretation === 'Normal' 
-                      ? 'text-green-600' 
-                      : interpretation === 'Mild Neurocognitive Disorder'
-                        ? 'text-yellow-600'
-                        : 'text-red-600'
-                  }`}>
-                    {interpretation}
-                  </div>
-                  <p className="text-xs text-blue-700 mt-2">
-                    Based on score and education level: {data.cognitive_education_level || 'Not specified'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-blue-200">
-                <p className="text-sm font-medium text-blue-800 mb-2">Interpretation Guide:</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="font-medium text-blue-900">High School Education:</p>
-                    <ul className="text-blue-700 space-y-1 mt-1">
-                      <li>27-30: Normal</li>
-                      <li>21-26: Mild Neurocognitive Disorder</li>
-                      <li>1-20: Dementia</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-medium text-blue-900">Less Than High School:</p>
-                    <ul className="text-blue-700 space-y-1 mt-1">
-                      <li>25-30: Normal</li>
-                      <li>20-24: Mild Neurocognitive Disorder</li>
-                      <li>1-19: Dementia</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+        <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">SLUMS Assessment Results</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600">{totalScore}</div>
+              <div className="text-sm text-gray-600">Total Score (out of 30)</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-semibold text-gray-900">{interpretation}</div>
+              <div className="text-sm text-gray-600">Interpretation</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-gray-600">Education Level</div>
+              <div className="text-lg font-medium">{data.cognitive_education_level || 'Not specified'}</div>
             </div>
           </div>
+
+          <div className="text-sm text-gray-600 space-y-1">
+            <p><strong>Scoring Guidelines:</strong></p>
+            <p>High School Graduate: Normal ≥27, MCI 21-26, Dementia ≤20</p>
+            <p>Less than High School: Normal ≥25, MCI 20-24, Dementia ≤19</p>
+          </div>
         </div>
-        
+
         {/* Additional Notes */}
         <div>
           <label htmlFor="cognitive_notes" className="block text-sm font-medium text-gray-700 mb-2">
-            Additional Notes
+            Additional SLUMS Assessment Notes
           </label>
           <textarea
             id="cognitive_notes"
@@ -1452,7 +1187,7 @@ export default function SlumsAssessmentSection({
             className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
               isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
             }`}
-            placeholder="Enter any additional observations or notes about the SLUMS assessment..."
+            placeholder="Additional observations, client behavior, environmental factors, etc."
           />
         </div>
       </div>
