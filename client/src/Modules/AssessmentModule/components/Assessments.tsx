@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
-import { Plus, Search, Eye, Calendar, User, FileText, Download } from 'lucide-react'
+import { Plus, Search, Eye, Calendar, User, FileText, Download, Edit3, Trash2 } from 'lucide-react'
 import { Assessment, Client } from '../../../lib/mockData'
 import { getAssessments } from '../services/assessmentService'
 import { getClients } from '../../../lib/firestoreService'
@@ -13,6 +13,7 @@ export default function Assessments() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -43,8 +44,35 @@ export default function Assessments() {
     navigate('/assessments/new')
   }
 
+  const handleViewAssessment = (assessment: Assessment) => {
+    navigate(`/assessments/${assessment.id}`)
+  }
+
   const handleEditAssessment = (assessment: Assessment) => {
     navigate(`/assessments/${assessment.id}`)
+  }
+
+  const handleDeleteAssessment = async (assessmentId: string) => {
+    try {
+      // Import deleteAssessment function
+      const { deleteAssessment } = await import('../services/assessmentService')
+      await deleteAssessment(assessmentId)
+      
+      // Refresh the data
+      await fetchData()
+      setDeleteConfirm(null)
+    } catch (error) {
+      console.error('Error deleting assessment:', error)
+      alert('Failed to delete assessment. Please try again.')
+    }
+  }
+
+  const confirmDelete = (assessmentId: string) => {
+    setDeleteConfirm(assessmentId)
+  }
+
+  const cancelDelete = () => {
+    setDeleteConfirm(null)
   }
 
   const getClientName = (clientId: string) => {
@@ -229,11 +257,25 @@ export default function Assessments() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <button
-                              onClick={() => handleEditAssessment(assessment)}
+                              onClick={() => handleViewAssessment(assessment)}
                               className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded transition-colors"
-                              title="View/Edit assessment"
+                              title="View assessment"
                             >
                               <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditAssessment(assessment)}
+                              className="text-emerald-600 hover:text-emerald-900 p-1 hover:bg-emerald-50 rounded transition-colors"
+                              title="Edit assessment"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => confirmDelete(assessment.id)}
+                              className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
+                              title="Delete assessment"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                             {assessment.status === 'completed' && (
                               <button
@@ -255,6 +297,39 @@ export default function Assessments() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mt-4">Delete Assessment</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete this assessment? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteAssessment(deleteConfirm)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
