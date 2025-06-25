@@ -18,7 +18,7 @@ import { isValidStaffEmailDomain } from '../lib/emailService'
 
 export default function Admin() {
   const { profile } = useAuth()
-  const [activeTab, setActiveTab] = useState<'staff' | 'clients'>('staff')
+  const [activeTab, setActiveTab] = useState<'staff' | 'clients' | 'templates'>('staff')
   const [users, setUsers] = useState<UserType[]>([])
   const [clientUsers, setClientUsers] = useState<ClientUser[]>([])
   const [clients, setClients] = useState<Client[]>([])
