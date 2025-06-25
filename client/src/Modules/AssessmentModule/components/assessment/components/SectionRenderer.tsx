@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, User, Heart, Stethoscope, Activity, Brain, ClipboardList, Smile, Home, FileText, Users, Palette, Settings } from 'lucide-react'
 import { SectionKey, SectionData, ValidationError } from '../../../../../types/assessment'
 import { Client } from '../../../../../lib/mockData'
 import BasicInformationSection from '../sections/BasicInformationSection'
@@ -173,7 +173,7 @@ export default function SectionRenderer({
               {/* Section Info */}
               <div className="flex flex-col items-center text-center">
                 <span className="text-sm font-medium text-gray-900">
-                  {sectionConfig[currentSection].label}
+                  {sectionConfig[currentSection]?.label || 'Unknown Section'}
                 </span>
                 <span className="text-xs text-gray-500">
                   Section {currentIndex + 1} of {sectionKeys.length}
