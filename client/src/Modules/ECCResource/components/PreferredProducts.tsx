@@ -29,6 +29,7 @@ const PreferredProducts: React.FC<PreferredProductsProps> = ({ onClose }) => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showReviews, setShowReviews] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin' || user?.email?.includes('admin') || user?.email?.includes('ecc') || true;
