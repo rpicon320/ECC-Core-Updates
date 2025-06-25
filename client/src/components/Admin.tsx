@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, Edit, Trash2, Shield, User, Key, Users, UserCheck, Link, RefreshCw, Copy, Eye, EyeOff, Mail, AlertTriangle } from 'lucide-react'
+import { Plus, Edit, Trash2, Shield, User, Key, Users, UserCheck, Link, RefreshCw, Copy, Eye, EyeOff, Mail, AlertTriangle, Target } from 'lucide-react'
 import { User as UserType, ClientUser, Client } from '../lib/mockData'
 import { 
   getUsers, 
@@ -15,6 +15,7 @@ import {
   resendVerificationEmail
 } from '../lib/firestoreService'
 import { isValidStaffEmailDomain } from '../lib/emailService'
+import CarePlanTemplates from './CarePlanTemplates'
 
 export default function Admin() {
   const { profile } = useAuth()
@@ -310,6 +311,17 @@ export default function Admin() {
                 <UserCheck className="h-4 w-4 inline mr-2" />
                 Client Access Management
               </button>
+              <button
+                onClick={() => setActiveTab('templates')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'templates'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Target className="h-4 w-4 inline mr-2" />
+                Care Plan Templates
+              </button>
             </nav>
           </div>
         </div>
@@ -325,6 +337,9 @@ export default function Admin() {
             {success}
           </div>
         )}
+
+        {/* Care Plan Templates Tab */}
+        {activeTab === 'templates' && <CarePlanTemplates />}
 
         {/* Staff Users Tab */}
         {activeTab === 'staff' && (
