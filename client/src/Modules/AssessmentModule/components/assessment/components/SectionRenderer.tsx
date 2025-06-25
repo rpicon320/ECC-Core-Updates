@@ -129,6 +129,9 @@ export default function SectionRenderer({
       case 'providers':
         return <CareProvidersSection {...commonProps} />
       
+      case 'care_plan':
+        return <CarePlanSection />
+      
       case 'services':
         return <CareServicesSection {...commonProps} />
       
