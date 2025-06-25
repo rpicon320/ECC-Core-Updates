@@ -138,4 +138,8 @@ This is a client management application with authentication, assessment modules,
   - Full CRUD operations with localStorage persistence
   - Template reuse for consistent care planning across clients
   - Categories include Medical Management, Safety Assessment, Functional Independence, etc.
+  - Bulk CSV upload functionality with downloadable template
+  - CSV format validation and error handling
+  - Progress tracking for file uploads
+  - Sample template generation with proper formatting
 ✓ Application fully operational with all core features functional

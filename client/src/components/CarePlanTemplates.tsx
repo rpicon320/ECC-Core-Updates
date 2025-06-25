@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 interface Recommendation {
@@ -148,6 +148,11 @@ export default function CarePlanTemplates() {
     priority: 'medium' as 'high' | 'medium' | 'low'
   })
 
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadError, setUploadError] = useState('')
+
   useEffect(() => {
     loadTemplates()
   }, [])
@@ -287,6 +292,111 @@ export default function CarePlanTemplates() {
     }
   }
 
+  const downloadTemplate = () => {
+    const csvContent = [
+      'Category,Concern,Barrier,SMART Goal,Target Date,Is Ongoing,Recommendations (separate multiple with |),Recommendation Priorities (separate multiple with |)',
+      'Medical Management,Chronic Disease Management,Patient struggles with daily medication adherence,Patient will take medications as prescribed 90% of the time within 30 days,2024-03-01,false,Set up pill organizer|Create medication reminder app|Schedule weekly pharmacy check-ins,high|medium|low',
+      'Safety & Risk Assessment,Fall Risk,Home has multiple trip hazards and poor lighting,Reduce fall risk by 50% through home modifications within 60 days,2024-04-01,false,Install grab bars in bathroom|Improve lighting in hallways|Remove loose rugs,high|high|medium'
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'care_plan_templates.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const parseCSV = (text: string): CarePlanTemplate[] => {
+    const lines = text.split('\n').filter(line => line.trim())
+    const headers = lines[0].split(',')
+    const templates: CarePlanTemplate[] = []
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(',')
+      if (row.length < 6) continue // Skip invalid rows
+
+      const recommendationTexts = row[6] ? row[6].split('|').map(r => r.trim()).filter(r => r) : []
+      const recommendationPriorities = row[7] ? row[7].split('|').map(p => p.trim()).filter(p => p) : []
+      
+      const recommendations: Recommendation[] = recommendationTexts.map((text, index) => ({
+        id: `${Date.now()}-${index}`,
+        text,
+        priority: (recommendationPriorities[index] as 'high' | 'medium' | 'low') || 'medium'
+      }))
+
+      const template: CarePlanTemplate = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        category: row[0]?.trim() || '',
+        concern: row[1]?.trim() || '',
+        barrier: row[2]?.trim() || '',
+        smartGoal: row[3]?.trim() || '',
+        targetDate: row[4]?.trim() || '',
+        isOngoing: row[5]?.toLowerCase() === 'true',
+        recommendations,
+        createdBy: user?.name || 'CSV Import',
+        createdAt: new Date(),
+        lastModified: new Date()
+      }
+
+      // Validate required fields
+      if (template.category && template.concern && template.barrier && template.smartGoal) {
+        templates.push(template)
+      }
+    }
+
+    return templates
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file && file.type === 'text/csv') {
+      setUploadFile(file)
+      setUploadError('')
+    } else {
+      setUploadError('Please select a valid CSV file')
+    }
+  }
+
+  const processUpload = async () => {
+    if (!uploadFile) return
+
+    setUploadProgress(10)
+    setUploadError('')
+
+    try {
+      const text = await uploadFile.text()
+      setUploadProgress(50)
+      
+      const newTemplates = parseCSV(text)
+      setUploadProgress(80)
+      
+      if (newTemplates.length === 0) {
+        setUploadError('No valid templates found in the CSV file')
+        return
+      }
+
+      // Add new templates to existing ones
+      const updatedTemplates = [...templates, ...newTemplates]
+      saveTemplates(updatedTemplates)
+      setUploadProgress(100)
+      
+      setTimeout(() => {
+        setShowUploadModal(false)
+        setUploadFile(null)
+        setUploadProgress(0)
+        alert(`Successfully imported ${newTemplates.length} care plan templates!`)
+      }, 500)
+      
+    } catch (error) {
+      setUploadError('Error processing file: ' + (error as Error).message)
+      setUploadProgress(0)
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -296,13 +406,29 @@ export default function CarePlanTemplates() {
               <Target className="h-6 w-6 text-white mr-3" />
               <h2 className="text-xl font-semibold text-white">Care Plan Templates</h2>
             </div>
-            <button
-              onClick={() => openForm()}
-              className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 flex items-center"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Template
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={downloadTemplate}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Template
+              </button>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 flex items-center"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Bulk Upload
+              </button>
+              <button
+                onClick={() => openForm()}
+                className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Template
+              </button>
+            </div>
           </div>
           <p className="text-blue-100 mt-2 text-sm">
             Create and manage reusable care plan templates for consistent care planning
@@ -577,6 +703,131 @@ export default function CarePlanTemplates() {
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="bg-orange-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Bulk Upload Care Plan Templates</h3>
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false)
+                    setUploadFile(null)
+                    setUploadProgress(0)
+                    setUploadError('')
+                  }}
+                  className="text-white hover:bg-orange-700 p-1 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="text-sm text-gray-600">
+                <p className="mb-3">Upload a CSV file with care plan templates. Make sure your file follows the correct format.</p>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                  <div className="flex items-start">
+                    <FileText className="h-4 w-4 text-blue-600 mr-2 mt-0.5" />
+                    <div>
+                      <p className="text-blue-800 font-medium text-sm">Need the template format?</p>
+                      <button
+                        onClick={downloadTemplate}
+                        className="text-blue-600 hover:text-blue-800 text-sm underline mt-1"
+                      >
+                        Download CSV template with examples
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select CSV File
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              {uploadFile && (
+                <div className="bg-gray-50 rounded-md p-3">
+                  <div className="flex items-center">
+                    <FileText className="h-4 w-4 text-gray-600 mr-2" />
+                    <span className="text-sm text-gray-900">{uploadFile.name}</span>
+                  </div>
+                </div>
+              )}
+
+              {uploadProgress > 0 && (
+                <div>
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Processing...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
+                  {uploadError}
+                </div>
+              )}
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <div className="flex">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 mr-2 mt-0.5" />
+                  <div className="text-yellow-800 text-xs">
+                    <p className="font-medium">CSV Format Requirements:</p>
+                    <ul className="mt-1 list-disc list-inside space-y-1">
+                      <li>Headers: Category, Concern, Barrier, SMART Goal, Target Date, Is Ongoing, Recommendations, Recommendation Priorities</li>
+                      <li>Separate multiple recommendations with | (pipe character)</li>
+                      <li>Use "true" or "false" for Is Ongoing column</li>
+                      <li>Date format: YYYY-MM-DD</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowUploadModal(false)
+                  setUploadFile(null)
+                  setUploadProgress(0)
+                  setUploadError('')
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                disabled={uploadProgress > 0 && uploadProgress < 100}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={processUpload}
+                disabled={!uploadFile || uploadProgress > 0}
+                className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadProgress > 0 ? 'Processing...' : 'Upload Templates'}
               </button>
             </div>
           </div>
