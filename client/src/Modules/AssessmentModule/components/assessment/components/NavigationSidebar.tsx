@@ -43,6 +43,7 @@ const sectionConfig = {
   psychosocial: { label: 'Psychosocial', icon: Users, color: 'teal' },
   hobbies: { label: 'Hobbies & Interests', icon: Palette, color: 'orange' },
   providers: { label: 'Care Providers', icon: Stethoscope, color: 'cyan' },
+  care_plan: { label: 'Care Plan', icon: ClipboardList, color: 'emerald' },
   services: { label: 'Care Services', icon: Settings, color: 'gray' },
   summary: { label: 'Final Summary', icon: FileText, color: 'slate' }
 }

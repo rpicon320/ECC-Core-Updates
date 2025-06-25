@@ -39,6 +39,7 @@ export type SectionKey =
   | 'psychosocial' 
   | 'hobbies' 
   | 'providers' 
+  | 'care_plan'
   | 'services' 
   | 'summary'
 

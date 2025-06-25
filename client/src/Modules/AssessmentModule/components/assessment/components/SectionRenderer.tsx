@@ -14,6 +14,7 @@ import AdvanceDirectivesSection from '../sections/AdvanceDirectivesSection'
 import PsychosocialSection from '../sections/PsychosocialSection'
 import HobbiesSection from '../sections/HobbiesSection'
 import CareProvidersSection from '../sections/CareProvidersSection'
+import CarePlanSection from '../sections/CarePlanSection'
 import CareServicesSection from '../sections/CareServicesSection'
 import FinalSummarySection from '../sections/FinalSummarySection'
 

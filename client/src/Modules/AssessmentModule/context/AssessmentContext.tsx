@@ -15,7 +15,7 @@ import { Assessment } from '../../../lib/mockData'
 // Helper functions defined first
 function initializeEmptySections(): Record<SectionKey, SectionData> {
   const sections = {} as Record<SectionKey, SectionData>
-  const sectionKeys: SectionKey[] = ['basic', 'medical', 'health_symptoms', 'functional', 'cognitive', 'slums', 'mental', 'safety', 'directives', 'psychosocial', 'hobbies', 'providers', 'services', 'summary']
+  const sectionKeys: SectionKey[] = ['basic', 'medical', 'health_symptoms', 'functional', 'cognitive', 'slums', 'mental', 'safety', 'directives', 'psychosocial', 'hobbies', 'providers', 'care_plan', 'services', 'summary']
   
   sectionKeys.forEach(key => {
     sections[key] = {
