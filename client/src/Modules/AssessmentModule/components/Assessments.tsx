@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
-import { Plus, Search, Eye, Calendar, User, FileText, Download, Edit3, Trash2 } from 'lucide-react'
+import { Plus, Search, Eye, Calendar, User, FileText, Download, Edit3, Trash2, AlertCircle } from 'lucide-react'
 import { Assessment, Client } from '../../../lib/mockData'
 import { getAssessments } from '../services/assessmentService'
 import { getClients } from '../../../lib/firestoreService'
@@ -14,6 +14,7 @@ export default function Assessments() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleteRequestConfirm, setDeleteRequestConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -73,6 +74,58 @@ export default function Assessments() {
 
   const cancelDelete = () => {
     setDeleteConfirm(null)
+  }
+
+  const handleRequestDelete = async (assessmentId: string) => {
+    try {
+      // Create a deletion request notification for admin
+      const { createNotification } = await import('../../../lib/firestoreService')
+      const assessment = assessments.find(a => a.id === assessmentId)
+      const client = getClientInfo(assessment?.client_id || '')
+      const clientName = getClientName(assessment?.client_id || '')
+      
+      await createNotification({
+        type: 'assessment_deletion_request',
+        title: 'Assessment Deletion Request',
+        message: `${user?.first_name} ${user?.last_name} has requested to delete an assessment for ${clientName}`,
+        recipient_role: 'admin',
+        data: {
+          assessment_id: assessmentId,
+          requester_id: user?.id,
+          requester_name: `${user?.first_name} ${user?.last_name}`,
+          client_name: clientName,
+          assessment_date: assessment?.created_at
+        },
+        created_by: user?.id,
+        status: 'pending'
+      })
+      
+      setDeleteRequestConfirm(null)
+      alert('Deletion request sent to admin for approval.')
+    } catch (error) {
+      console.error('Error creating deletion request:', error)
+      alert('Failed to send deletion request. Please try again.')
+    }
+  }
+
+  const confirmDeleteRequest = (assessmentId: string) => {
+    setDeleteRequestConfirm(assessmentId)
+  }
+
+  const cancelDeleteRequest = () => {
+    setDeleteRequestConfirm(null)
+  }
+
+  // Check if user can edit a specific assessment
+  const canEditAssessment = (assessment: Assessment) => {
+    if (user?.role === 'admin') return true
+    // Staff can edit if they created it or are assigned to the client
+    return assessment.created_by === user?.id || assessment.assigned_staff_id === user?.id
+  }
+
+  // Check if user can delete assessments
+  const canDeleteAssessment = () => {
+    return user?.role === 'admin'
   }
 
   const getClientName = (clientId: string) => {
@@ -256,6 +309,7 @@ export default function Assessments() {
                         )}
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
+                            {/* All staff can view */}
                             <button
                               onClick={() => handleViewAssessment(assessment)}
                               className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded transition-colors"
@@ -263,20 +317,40 @@ export default function Assessments() {
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button
-                              onClick={() => handleEditAssessment(assessment)}
-                              className="text-emerald-600 hover:text-emerald-900 p-1 hover:bg-emerald-50 rounded transition-colors"
-                              title="Edit assessment"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => confirmDelete(assessment.id)}
-                              className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                              title="Delete assessment"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            
+                            {/* Only assigned staff and admins can edit */}
+                            {canEditAssessment(assessment) && (
+                              <button
+                                onClick={() => handleEditAssessment(assessment)}
+                                className="text-emerald-600 hover:text-emerald-900 p-1 hover:bg-emerald-50 rounded transition-colors"
+                                title="Edit assessment"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                            )}
+                            
+                            {/* Only admins can delete directly */}
+                            {canDeleteAssessment() && (
+                              <button
+                                onClick={() => confirmDelete(assessment.id)}
+                                className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
+                                title="Delete assessment"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                            
+                            {/* Staff can request deletion */}
+                            {!canDeleteAssessment() && user?.role !== 'client' && (
+                              <button
+                                onClick={() => confirmDeleteRequest(assessment.id)}
+                                className="text-orange-600 hover:text-orange-900 p-1 hover:bg-orange-50 rounded transition-colors"
+                                title="Request deletion"
+                              >
+                                <AlertCircle className="h-4 w-4" />
+                              </button>
+                            )}
+                            
                             {assessment.status === 'completed' && (
                               <button
                                 onClick={() => handleExportPDF(assessment.id)}
@@ -324,6 +398,39 @@ export default function Assessments() {
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Request Confirmation Modal */}
+      {deleteRequestConfirm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100">
+                <AlertCircle className="h-6 w-6 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mt-4">Request Assessment Deletion</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  This will send a deletion request to the administrator for approval. You will be notified when the request is reviewed.
+                </p>
+              </div>
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  onClick={cancelDeleteRequest}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleRequestDelete(deleteRequestConfirm)}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  Send Request
                 </button>
               </div>
             </div>

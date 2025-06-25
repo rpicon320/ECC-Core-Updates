@@ -942,6 +942,89 @@ export const initializeFirestoreData = async (): Promise<void> => {
 // MIGRATION FROM LOCALSTORAGE
 // ============================================================================
 
+// Notification management
+export interface Notification {
+  id?: string;
+  type: string;
+  title: string;
+  message: string;
+  recipient_role?: string;
+  recipient_id?: string;
+  data?: any;
+  created_by: string;
+  created_at?: Date;
+  status: 'pending' | 'approved' | 'rejected' | 'read';
+  reviewed_by?: string;
+  reviewed_at?: Date;
+}
+
+export const createNotification = async (notificationData: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> => {
+  try {
+    const notification: Notification = {
+      ...notificationData,
+      created_at: new Date(),
+      id: generateId()
+    };
+
+    const notificationsCollection = collection(db, 'notifications');
+    await addDoc(notificationsCollection, notification);
+    
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    throw error;
+  }
+};
+
+export const getNotifications = async (role?: string, userId?: string): Promise<Notification[]> => {
+  try {
+    const notificationsCollection = collection(db, 'notifications');
+    let q = query(notificationsCollection, orderBy('created_at', 'desc'));
+    
+    if (role && role !== 'admin') {
+      q = query(notificationsCollection, 
+        where('recipient_id', '==', userId),
+        orderBy('created_at', 'desc')
+      );
+    } else if (role === 'admin') {
+      q = query(notificationsCollection,
+        where('recipient_role', '==', 'admin'),
+        orderBy('created_at', 'desc')
+      );
+    }
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      created_at: doc.data().created_at?.toDate(),
+      reviewed_at: doc.data().reviewed_at?.toDate()
+    } as Notification));
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return [];
+  }
+};
+
+export const updateNotificationStatus = async (notificationId: string, status: string, reviewedBy?: string): Promise<void> => {
+  try {
+    const notificationRef = doc(db, 'notifications', notificationId);
+    const updateData: any = {
+      status,
+      reviewed_at: new Date()
+    };
+    
+    if (reviewedBy) {
+      updateData.reviewed_by = reviewedBy;
+    }
+    
+    await updateDoc(notificationRef, updateData);
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    throw error;
+  }
+};
+
 export const migrateFromLocalStorage = async (): Promise<void> => {
   try {
     // Check if localStorage has data

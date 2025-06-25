@@ -116,10 +116,12 @@ This is a client management application with authentication, assessment modules,
   - Loading states and error recovery mechanisms
   - Soft delete functionality (isActive flag)
   - Product search and filtering capabilities
-✓ Enhanced assessments interface with comprehensive action buttons
-  - Added edit button alongside view button for direct assessment editing
-  - Implemented delete functionality with confirmation modal
-  - Proper error handling and data refresh after operations
-  - Visual distinction between view (blue), edit (green), and delete (red) actions
-  - Delete confirmation modal prevents accidental deletions
+✓ Enhanced assessments interface with role-based action permissions
+  - All staff members can view assessments (blue eye icon)
+  - Only assigned staff and admins can edit assessments (green edit icon)
+  - Only admins can delete assessments directly (red trash icon)
+  - Staff members can request deletion (orange alert icon) with admin approval workflow
+  - Implemented notification system for deletion requests
+  - Visual distinction between different action types and permission levels
+  - Confirmation modals for both direct deletion and deletion requests
 ✓ Application fully operational with all core features functional
