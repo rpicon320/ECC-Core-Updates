@@ -33,39 +33,8 @@ const standardizedCategories = [
   'Other'
 ]
 
+// Complete concerns mapping for all 16 standardized categories
 const concerns = {
-  'Financial': [
-    'Budget Management',
-    'Healthcare Costs',
-    'Insurance Coverage',
-    'Benefits Access',
-    'Financial Exploitation Prevention',
-    'Money Management'
-  ],
-  'Healthcare Navigation': [
-    'Healthcare Team Communication',
-    'Appointment Scheduling',
-    'Medical Records Management',
-    'Insurance Coordination',
-    'Provider Communication',
-    'Health System Navigation'
-  ],
-  'Housing': [
-    'Home Modifications',
-    'Accessibility Issues',
-    'Housing Stability',
-    'Environmental Safety',
-    'Relocation Planning',
-    'Independent Living'
-  ],
-  'Legal': [
-    'Healthcare Directives',
-    'Power of Attorney',
-    'Legal Documentation',
-    'Guardianship Issues',
-    'Rights Protection',
-    'Estate Planning'
-  ],
   'Behavioral and Emotional Concerns': [
     'Depression/Anxiety',
     'Grief and Loss',
@@ -107,6 +76,38 @@ const concerns = {
     'Respite Care',
     'Education and Training',
     'Stress Management'
+  ],
+  'Financial': [
+    'Budget Management',
+    'Healthcare Costs',
+    'Insurance Coverage',
+    'Benefits Access',
+    'Financial Exploitation Prevention',
+    'Money Management'
+  ],
+  'Healthcare Navigation': [
+    'Healthcare Team Communication',
+    'Appointment Scheduling',
+    'Medical Records Management',
+    'Insurance Coordination',
+    'Provider Communication',
+    'Health System Navigation'
+  ],
+  'Housing': [
+    'Home Modifications',
+    'Accessibility Issues',
+    'Housing Stability',
+    'Environmental Safety',
+    'Relocation Planning',
+    'Independent Living'
+  ],
+  'Legal': [
+    'Healthcare Directives',
+    'Power of Attorney',
+    'Legal Documentation',
+    'Guardianship Issues',
+    'Rights Protection',
+    'Estate Planning'
   ],
   'Medical/health status': [
     'Chronic Disease Management',
@@ -287,19 +288,11 @@ export default function CarePlanTemplates() {
       ])
       setTemplates(templatesData)
       
-      // Use standard categories, but merge with any user-created categories from Firestore
-      const mergedCategories = [...standardCategories]
-      categoriesData.forEach(cat => {
-        if (!mergedCategories.includes(cat)) {
-          mergedCategories.push(cat)
-        }
-      })
-      setCategories(mergedCategories)
+      // Always use standardized categories
+      setCategories(standardCategories)
       
-      // Save standardized categories to Firestore if they don't match
-      if (JSON.stringify(categoriesData.sort()) !== JSON.stringify(standardCategories.sort())) {
-        await saveCarePlanCategories(mergedCategories)
-      }
+      // Save standardized categories to Firestore to ensure consistency
+      await saveCarePlanCategories(standardCategories)
     } catch (error) {
       console.error('Error loading care plan data:', error)
     } finally {
@@ -886,8 +879,10 @@ export default function CarePlanTemplates() {
             </div>
           ) : (
             <div className="space-y-2">
-              {Object.entries(templatesByCategory).sort(([a], [b]) => a.localeCompare(b)).map(([category, categoryTemplates]) => (
-                <div key={category} className="border border-gray-200 rounded-lg overflow-hidden">
+              {standardCategories.map(category => {
+                const categoryTemplates = templatesByCategory[category] || []
+                return (
+                  <div key={category} className="border border-gray-200 rounded-lg overflow-hidden">
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category)}
@@ -907,10 +902,10 @@ export default function CarePlanTemplates() {
                     <List className="h-4 w-4 text-gray-400" />
                   </button>
 
-                  {/* Templates List */}
+                  {/* Templates List or Empty State */}
                   {expandedCategories.has(category) && (
                     <div className="divide-y divide-gray-100">
-                      {categoryTemplates.map(template => (
+                      {categoryTemplates.length > 0 ? categoryTemplates.map(template => (
                         <div key={template.id} className="p-4 hover:bg-gray-50 transition-colors">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -967,39 +962,25 @@ export default function CarePlanTemplates() {
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {/* Show categories with no templates */}
-              {categories.filter(cat => !templatesByCategory[cat]).length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Empty Categories</h4>
-                  <div className="space-y-1">
-                    {categories.filter(cat => !templatesByCategory[cat]).map(category => (
-                      <div key={category} className="border border-gray-200 rounded-lg">
-                        <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <ChevronRight className="h-4 w-4 text-gray-400 mr-3" />
-                            <h3 className="font-medium text-gray-500">{category}</h3>
-                            <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-medium px-2 py-1 rounded-full">
-                              0
-                            </span>
-                          </div>
+                      )) : (
+                        <div className="p-4 text-center bg-gray-50">
+                          <p className="text-gray-500 mb-3">No templates in this category yet</p>
                           <button
-                            onClick={() => openForm()}
-                            className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, category: category }))
+                              openForm()
+                            }}
+                            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
                           >
                             Add Template
                           </button>
                         </div>
-                      </div>
-                    ))}
+                      )}
+                    </div>
+                  )}
                   </div>
-                </div>
-              )}
+                )
+              })}
             </div>
           )}
         </div>
