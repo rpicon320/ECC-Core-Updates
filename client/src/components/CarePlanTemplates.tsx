@@ -469,8 +469,8 @@ export default function CarePlanTemplates() {
         lastModified: new Date()
       }
 
-      if (editingTemplate) {
-        await updateCarePlanTemplate(editingTemplate.id!, templateData)
+      if (editingTemplate && editingTemplate.id) {
+        await updateCarePlanTemplate(editingTemplate.id, templateData)
       } else {
         await createCarePlanTemplate(templateData)
       }

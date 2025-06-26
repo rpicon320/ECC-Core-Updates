@@ -15,7 +15,7 @@ import {
   resendVerificationEmail
 } from '../lib/firestoreService'
 import { isValidStaffEmailDomain } from '../lib/emailService'
-import CarePlanTemplates from './CarePlanTemplates'
+import ConcernBasedCarePlans from './ConcernBasedCarePlans'
 
 export default function Admin() {
   const { profile } = useAuth()
@@ -339,7 +339,7 @@ export default function Admin() {
         )}
 
         {/* Care Plan Templates Tab */}
-        {activeTab === 'templates' && <CarePlanTemplates />}
+        {activeTab === 'templates' && <ConcernBasedCarePlans />}
 
         {/* Staff Users Tab */}
         {activeTab === 'staff' && (
