@@ -133,7 +133,7 @@ This is a client management application with authentication, assessment modules,
 ✓ Created Care Plan Templates admin subpage
   - Comprehensive template management system with 12 predefined categories
   - Dynamic concern dropdowns based on selected category (60+ concerns total)
-  - SMART goal framework with target date or ongoing options
+  - Target date or ongoing options for care plan implementation
   - Multiple recommendations with priority levels (high/medium/low)
   - Full CRUD operations with localStorage persistence
   - Template reuse for consistent care planning across clients

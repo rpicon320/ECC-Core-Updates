@@ -13,7 +13,6 @@ interface CarePlanTemplate {
   category: string
   concern: string
   barrier: string
-  smartGoal: string
   targetDate?: string
   isOngoing: boolean
   recommendations: Recommendation[]
@@ -294,9 +293,9 @@ export default function CarePlanTemplates() {
 
   const downloadTemplate = () => {
     const csvContent = [
-      'Category,Concern,Barrier,SMART Goal,Target Date,Is Ongoing,Recommendations (separate multiple with |),Recommendation Priorities (separate multiple with |)',
-      'Medical Management,Chronic Disease Management,Patient struggles with daily medication adherence,Patient will take medications as prescribed 90% of the time within 30 days,2024-03-01,false,Set up pill organizer|Create medication reminder app|Schedule weekly pharmacy check-ins,high|medium|low',
-      'Safety & Risk Assessment,Fall Risk,Home has multiple trip hazards and poor lighting,Reduce fall risk by 50% through home modifications within 60 days,2024-04-01,false,Install grab bars in bathroom|Improve lighting in hallways|Remove loose rugs,high|high|medium'
+      'Category,Concern,Barrier,Target Date,Is Ongoing,Recommendations (separate multiple with |),Recommendation Priorities (separate multiple with |)',
+      'Medical Management,Chronic Disease Management,Patient struggles with daily medication adherence,2024-03-01,false,Set up pill organizer|Create medication reminder app|Schedule weekly pharmacy check-ins,high|medium|low',
+      'Safety & Risk Assessment,Fall Risk,Home has multiple trip hazards and poor lighting,2024-04-01,false,Install grab bars in bathroom|Improve lighting in hallways|Remove loose rugs,high|high|medium'
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -317,10 +316,10 @@ export default function CarePlanTemplates() {
 
     for (let i = 1; i < lines.length; i++) {
       const row = lines[i].split(',')
-      if (row.length < 6) continue // Skip invalid rows
+      if (row.length < 5) continue // Skip invalid rows
 
-      const recommendationTexts = row[6] ? row[6].split('|').map(r => r.trim()).filter(r => r) : []
-      const recommendationPriorities = row[7] ? row[7].split('|').map(p => p.trim()).filter(p => p) : []
+      const recommendationTexts = row[5] ? row[5].split('|').map(r => r.trim()).filter(r => r) : []
+      const recommendationPriorities = row[6] ? row[6].split('|').map(p => p.trim()).filter(p => p) : []
       
       const recommendations: Recommendation[] = recommendationTexts.map((text, index) => ({
         id: `${Date.now()}-${index}`,
@@ -333,9 +332,8 @@ export default function CarePlanTemplates() {
         category: row[0]?.trim() || '',
         concern: row[1]?.trim() || '',
         barrier: row[2]?.trim() || '',
-        smartGoal: row[3]?.trim() || '',
-        targetDate: row[4]?.trim() || '',
-        isOngoing: row[5]?.toLowerCase() === 'true',
+        targetDate: row[3]?.trim() || '',
+        isOngoing: row[4]?.toLowerCase() === 'true',
         recommendations,
         createdBy: user?.name || 'CSV Import',
         createdAt: new Date(),
@@ -343,7 +341,7 @@ export default function CarePlanTemplates() {
       }
 
       // Validate required fields
-      if (template.category && template.concern && template.barrier && template.smartGoal) {
+      if (template.category && template.concern && template.barrier) {
         templates.push(template)
       }
     }
@@ -798,7 +796,7 @@ export default function CarePlanTemplates() {
                   <div className="text-yellow-800 text-xs">
                     <p className="font-medium">CSV Format Requirements:</p>
                     <ul className="mt-1 list-disc list-inside space-y-1">
-                      <li>Headers: Category, Concern, Barrier, SMART Goal, Target Date, Is Ongoing, Recommendations, Recommendation Priorities</li>
+                      <li>Headers: Category, Concern, Barrier, Target Date, Is Ongoing, Recommendations, Recommendation Priorities</li>
                       <li>Separate multiple recommendations with | (pipe character)</li>
                       <li>Use "true" or "false" for Is Ongoing column</li>
                       <li>Date format: YYYY-MM-DD</li>
