@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 interface Recommendation {
@@ -151,8 +151,33 @@ export default function CarePlanTemplates() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
 
+  // Category management
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
+  const [categories, setCategories] = useState<string[]>([
+    'Behavioral and Emotional Concerns',
+    'Cognitive', 
+    'Daily habits and routines',
+    'End of life',
+    'Family and Caregiver Support',
+    'Financial',
+    'Healthcare Navigation',
+    'Housing',
+    'Legal',
+    'Medical/health status',
+    'Medications',
+    'Nutrition',
+    'Psychosocial',
+    'Safety',
+    'Support services',
+    'Other'
+  ])
+  const [editingCategory, setEditingCategory] = useState<string | null>(null)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [addingNewCategory, setAddingNewCategory] = useState(false)
+
   useEffect(() => {
     loadTemplates()
+    loadCategories()
   }, [])
 
   useEffect(() => {
@@ -177,6 +202,18 @@ export default function CarePlanTemplates() {
   const saveTemplates = (newTemplates: CarePlanTemplate[]) => {
     localStorage.setItem('carePlanTemplates', JSON.stringify(newTemplates))
     setTemplates(newTemplates)
+  }
+
+  const loadCategories = () => {
+    const saved = localStorage.getItem('carePlanCategories')
+    if (saved) {
+      setCategories(JSON.parse(saved))
+    }
+  }
+
+  const saveCategories = (newCategories: string[]) => {
+    localStorage.setItem('carePlanCategories', JSON.stringify(newCategories))
+    setCategories(newCategories)
   }
 
   const resetForm = () => {
@@ -391,6 +428,48 @@ export default function CarePlanTemplates() {
     }
   }
 
+  // Category management functions
+  const addCategory = () => {
+    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+      const updatedCategories = [...categories, newCategoryName.trim()].sort()
+      saveCategories(updatedCategories)
+      setNewCategoryName('')
+      setAddingNewCategory(false)
+    }
+  }
+
+  const updateCategory = (oldName: string, newName: string) => {
+    if (newName.trim() && oldName !== newName.trim() && !categories.includes(newName.trim())) {
+      const updatedCategories = categories.map(cat => cat === oldName ? newName.trim() : cat).sort()
+      saveCategories(updatedCategories)
+      
+      // Update any templates that use this category
+      const updatedTemplates = templates.map(template => 
+        template.category === oldName 
+          ? { ...template, category: newName.trim(), lastModified: new Date() }
+          : template
+      )
+      saveTemplates(updatedTemplates)
+      
+      setEditingCategory(null)
+    }
+  }
+
+  const deleteCategory = (categoryName: string) => {
+    if (confirm(`Are you sure you want to delete the category "${categoryName}"? This will also delete all templates in this category.`)) {
+      const updatedCategories = categories.filter(cat => cat !== categoryName)
+      saveCategories(updatedCategories)
+      
+      // Delete templates that use this category
+      const updatedTemplates = templates.filter(template => template.category !== categoryName)
+      saveTemplates(updatedTemplates)
+    }
+  }
+
+  const getCategoryUsageCount = (categoryName: string) => {
+    return templates.filter(template => template.category === categoryName).length
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -401,6 +480,13 @@ export default function CarePlanTemplates() {
               <h2 className="text-xl font-semibold text-white">Care Plan Templates</h2>
             </div>
             <div className="flex space-x-3">
+              <button
+                onClick={() => setShowCategoryManager(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Categories
+              </button>
               <button
                 onClick={downloadTemplate}
                 className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
@@ -806,6 +892,165 @@ export default function CarePlanTemplates() {
               >
                 <Upload className="h-4 w-4 mr-2" />
                 {uploadProgress > 0 ? 'Processing...' : 'Upload Templates'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="bg-purple-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <FolderOpen className="h-5 w-5 mr-2" />
+                  Manage Categories
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowCategoryManager(false)
+                    setEditingCategory(null)
+                    setAddingNewCategory(false)
+                    setNewCategoryName('')
+                  }}
+                  className="text-white hover:bg-purple-700 p-1 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-96 overflow-y-auto">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-600">
+                    Manage care plan template categories. Changes will affect all existing templates.
+                  </p>
+                  <button
+                    onClick={() => setAddingNewCategory(true)}
+                    className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 flex items-center"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Category
+                  </button>
+                </div>
+
+                {addingNewCategory && (
+                  <div className="bg-gray-50 rounded-md p-3 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Enter new category name"
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') addCategory()
+                          if (e.key === 'Escape') {
+                            setAddingNewCategory(false)
+                            setNewCategoryName('')
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={addCategory}
+                        className="bg-green-600 text-white px-2 py-1 rounded text-sm hover:bg-green-700"
+                      >
+                        <Save className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAddingNewCategory(false)
+                          setNewCategoryName('')
+                        }}
+                        className="bg-gray-400 text-white px-2 py-1 rounded text-sm hover:bg-gray-500"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {categories.map((category, index) => (
+                  <div key={category} className="border border-gray-200 rounded-md p-3 hover:bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        {editingCategory === category ? (
+                          <input
+                            type="text"
+                            defaultValue={category}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                updateCategory(category, e.currentTarget.value)
+                              }
+                              if (e.key === 'Escape') {
+                                setEditingCategory(null)
+                              }
+                            }}
+                            onBlur={(e) => {
+                              updateCategory(category, e.target.value)
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <div>
+                            <span className="font-medium text-gray-900">{category}</span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({getCategoryUsageCount(category)} template{getCategoryUsageCount(category) !== 1 ? 's' : ''})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-1 ml-3">
+                        <button
+                          onClick={() => setEditingCategory(editingCategory === category ? null : category)}
+                          className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                          title="Edit category"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => deleteCategory(category)}
+                          className="text-red-600 hover:bg-red-50 p-1 rounded"
+                          title="Delete category"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {categories.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <FolderOpen className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No categories found. Add a new category to get started.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {categories.length} categories total
+              </div>
+              <button
+                onClick={() => {
+                  setShowCategoryManager(false)
+                  setEditingCategory(null)
+                  setAddingNewCategory(false)
+                  setNewCategoryName('')
+                }}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+              >
+                Close
               </button>
             </div>
           </div>
