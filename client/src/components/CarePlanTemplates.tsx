@@ -556,8 +556,12 @@ export default function CarePlanTemplates() {
 
     // Additional confirmation with text input simulation
     const userConfirmation = prompt('Please type "DELETE ALL" to confirm this permanent action:')
-    if (userConfirmation !== 'DELETE ALL') {
-      alert('Action cancelled. Templates were not deleted.')
+    console.log('User typed:', userConfirmation)
+    console.log('Expected:', 'DELETE ALL')
+    console.log('Match:', userConfirmation === 'DELETE ALL')
+    
+    if (!userConfirmation || userConfirmation.trim().toUpperCase() !== 'DELETE ALL') {
+      alert(`Action cancelled. You typed: "${userConfirmation}". Expected: "DELETE ALL"`)
       return
     }
 
