@@ -360,14 +360,18 @@ export default function CarePlanTemplates() {
       // Mark categories as fixed to hide the button
       setCategoriesFixed(true)
       
-      if (updatedCount > 0) {
-        alert(`Successfully standardized ${updatedCount} template categories.`)
-      } else {
-        alert('All template categories are already standardized.')
+      if (!silent) {
+        if (updatedCount > 0) {
+          alert(`Successfully standardized ${updatedCount} template categories.`)
+        } else {
+          alert('All template categories are already standardized.')
+        }
       }
     } catch (error) {
       console.error('Error cleaning up categories:', error)
-      alert('Error standardizing categories. Please try again.')
+      if (!silent) {
+        alert('Error standardizing categories. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
