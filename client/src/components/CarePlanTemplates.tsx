@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List, Undo2, AlertCircle } from 'lucide-react'
+import { Plus, Edit, Edit2, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List, Undo2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   getCarePlanTemplates, 
@@ -186,6 +186,13 @@ export default function CarePlanTemplates() {
   })
 
   const [newRecommendation, setNewRecommendation] = useState({
+    text: '',
+    priority: 'medium' as 'high' | 'medium' | 'low'
+  })
+
+  // Edit recommendation state
+  const [editingRecommendation, setEditingRecommendation] = useState<string | null>(null)
+  const [editRecommendationData, setEditRecommendationData] = useState({
     text: '',
     priority: 'medium' as 'high' | 'medium' | 'low'
   })
@@ -449,6 +456,34 @@ export default function CarePlanTemplates() {
       ...prev,
       recommendations: prev.recommendations.filter(r => r.id !== id)
     }))
+  }
+
+  const startEditingRecommendation = (recommendation: Recommendation) => {
+    setEditingRecommendation(recommendation.id)
+    setEditRecommendationData({
+      text: recommendation.text,
+      priority: recommendation.priority
+    })
+  }
+
+  const cancelEditingRecommendation = () => {
+    setEditingRecommendation(null)
+    setEditRecommendationData({ text: '', priority: 'medium' })
+  }
+
+  const saveEditedRecommendation = () => {
+    if (!editRecommendationData.text.trim()) return
+
+    setFormData(prev => ({
+      ...prev,
+      recommendations: prev.recommendations.map(rec =>
+        rec.id === editingRecommendation
+          ? { ...rec, text: editRecommendationData.text.trim(), priority: editRecommendationData.priority }
+          : rec
+      )
+    }))
+    
+    cancelEditingRecommendation()
   }
 
   const saveTemplate = async () => {
@@ -1219,23 +1254,74 @@ export default function CarePlanTemplates() {
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Added Recommendations:</h4>
                     {formData.recommendations.map(rec => (
                       <div key={rec.id} className="bg-white border border-gray-200 rounded-md p-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center mb-2">
-                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(rec.priority)}`}>
-                                {rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority
-                              </span>
+                        {editingRecommendation === rec.id ? (
+                          // Edit mode
+                          <div className="space-y-3">
+                            <textarea
+                              value={editRecommendationData.text}
+                              onChange={(e) => setEditRecommendationData(prev => ({ ...prev, text: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows={3}
+                            />
+                            <div className="flex items-center justify-between">
+                              <select
+                                value={editRecommendationData.priority}
+                                onChange={(e) => setEditRecommendationData(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="high">High Priority</option>
+                                <option value="medium">Medium Priority</option>
+                                <option value="low">Low Priority</option>
+                              </select>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={saveEditedRecommendation}
+                                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEditingRecommendation}
+                                  className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
-                            <p className="text-gray-900 text-sm leading-relaxed">{rec.text}</p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeRecommendation(rec.id)}
-                            className="text-red-600 hover:bg-red-50 p-1 rounded ml-3 flex-shrink-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
+                        ) : (
+                          // View mode
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(rec.priority)}`}>
+                                  {rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority
+                                </span>
+                              </div>
+                              <p className="text-gray-900 text-sm leading-relaxed">{rec.text}</p>
+                            </div>
+                            <div className="flex gap-1 ml-3 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => startEditingRecommendation(rec)}
+                                className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                                title="Edit recommendation"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeRecommendation(rec.id)}
+                                className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                title="Delete recommendation"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
