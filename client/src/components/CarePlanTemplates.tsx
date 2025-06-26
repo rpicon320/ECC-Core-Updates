@@ -673,10 +673,14 @@ export default function CarePlanTemplates() {
     setUploadError('')
 
     try {
+      console.log('Starting CSV upload process...')
       const text = await uploadFile.text()
+      console.log('CSV file read, content length:', text.length)
       setUploadProgress(50)
       
       const newTemplates = parseCSV(text)
+      console.log('Parsed templates:', newTemplates.length)
+      console.log('First template:', newTemplates[0])
       setUploadProgress(80)
       
       if (newTemplates.length === 0) {
@@ -685,7 +689,9 @@ export default function CarePlanTemplates() {
       }
 
       // Add new templates to Firestore
+      console.log('Adding templates to Firestore...')
       await batchCreateCarePlanTemplates(newTemplates)
+      console.log('Templates added successfully, reloading data...')
       await loadData() // Reload to get latest data
       setUploadProgress(100)
       
@@ -697,6 +703,7 @@ export default function CarePlanTemplates() {
       }, 500)
       
     } catch (error) {
+      console.error('Upload error:', error)
       setUploadError('Error processing file: ' + (error as Error).message)
       setUploadProgress(0)
     }
