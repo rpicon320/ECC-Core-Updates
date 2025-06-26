@@ -641,18 +641,32 @@ export default function CarePlanTemplates() {
 
   const parseCSV = (text: string): CarePlanTemplate[] => {
     const lines = text.split('\n').filter(line => line.trim())
-    if (lines.length < 2) return []
+    if (lines.length < 2) {
+      throw new Error('CSV file must have at least a header row and one data row')
+    }
     
     const headers = parseCSVLine(lines[0])
     console.log('CSV Headers:', headers)
+    
+    // Validate header format
+    const expectedHeaders = ['Category', 'Concern', 'Goal', 'Barrier', 'Recommendations']
+    const hasValidHeaders = expectedHeaders.every((header, index) => 
+      headers[index] && headers[index].toLowerCase().includes(header.toLowerCase())
+    )
+    
+    if (!hasValidHeaders) {
+      throw new Error(`CSV must have headers: ${expectedHeaders.join(', ')}. Found: ${headers.join(', ')}`)
+    }
+    
     const templates: CarePlanTemplate[] = []
+    let validCount = 0
+    let skippedCount = 0
 
     for (let i = 1; i < lines.length; i++) {
       const row = parseCSVLine(lines[i])
-      console.log(`Row ${i}:`, row)
       
       if (row.length < 4) {
-        console.log(`Skipping row ${i}: insufficient columns (${row.length})`)
+        skippedCount++
         continue // Skip invalid rows
       }
 
@@ -665,7 +679,26 @@ export default function CarePlanTemplates() {
       const barrier = cleanField(row[3] || '')
       const recommendationsText = cleanField(row[4] || '')
       
-      console.log('Parsed fields:', { category, concern, goal, barrier, recommendationsText })
+      // Validate that category is one of our standardized categories
+      const normalizedCategory = category.toLowerCase()
+      const validCategory = standardizedCategories.find(cat => 
+        cat.toLowerCase() === normalizedCategory || 
+        cat.toLowerCase().includes(normalizedCategory) ||
+        normalizedCategory.includes(cat.toLowerCase())
+      )
+      
+      if (!validCategory) {
+        console.log(`Skipping row ${i}: invalid category "${category}". Must be one of the 16 standardized categories.`)
+        skippedCount++
+        continue
+      }
+
+      // Validate minimum field lengths
+      if (!concern || concern.length < 5 || !goal || goal.length < 5 || !barrier || barrier.length < 5) {
+        console.log(`Skipping row ${i}: fields too short. Concern: "${concern}", Goal: "${goal}", Barrier: "${barrier}"`)
+        skippedCount++
+        continue
+      }
 
       const recommendationTexts = recommendationsText ? 
         recommendationsText.split('|').map(r => r.trim()).filter(r => r) : []
@@ -678,7 +711,7 @@ export default function CarePlanTemplates() {
 
       const template: CarePlanTemplate = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        category,
+        category: validCategory, // Use the matched standardized category
         concern,
         goal,
         barrier,
@@ -690,13 +723,15 @@ export default function CarePlanTemplates() {
         lastModified: new Date()
       }
 
-      // Validate required fields
-      if (template.category && template.concern && template.barrier) {
-        console.log('Valid template created:', template.category, '-', template.concern)
-        templates.push(template)
-      } else {
-        console.log('Skipping invalid template - missing required fields:', { category, concern, barrier })
-      }
+      console.log(`Valid template ${validCount + 1}:`, template.category, '-', template.concern)
+      templates.push(template)
+      validCount++
+    }
+
+    console.log(`Import summary: ${validCount} valid templates, ${skippedCount} rows skipped`)
+    
+    if (validCount === 0) {
+      throw new Error('No valid templates found. Please check that your CSV has the correct format with valid categories and complete data.')
     }
 
     return templates
