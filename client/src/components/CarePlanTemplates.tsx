@@ -136,7 +136,6 @@ export default function CarePlanTemplates() {
     category: '',
     concern: '',
     barrier: '',
-    smartGoal: '',
     targetDate: '',
     isOngoing: false,
     recommendations: [] as Recommendation[]
@@ -185,7 +184,6 @@ export default function CarePlanTemplates() {
       category: '',
       concern: '',
       barrier: '',
-      smartGoal: '',
       targetDate: '',
       isOngoing: false,
       recommendations: []
@@ -202,7 +200,6 @@ export default function CarePlanTemplates() {
         category: template.category,
         concern: template.concern,
         barrier: template.barrier,
-        smartGoal: template.smartGoal,
         targetDate: template.targetDate || '',
         isOngoing: template.isOngoing,
         recommendations: template.recommendations
@@ -256,11 +253,10 @@ export default function CarePlanTemplates() {
       category: formData.category,
       concern: formData.concern,
       barrier: formData.barrier,
-      smartGoal: formData.smartGoal,
       targetDate: formData.isOngoing ? undefined : formData.targetDate,
       isOngoing: formData.isOngoing,
       recommendations: formData.recommendations,
-      createdBy: user?.name || 'Unknown',
+      createdBy: user?.full_name || 'Unknown',
       createdAt: editingTemplate?.createdAt || now,
       lastModified: now
     }
@@ -335,7 +331,7 @@ export default function CarePlanTemplates() {
         targetDate: row[3]?.trim() || '',
         isOngoing: row[4]?.toLowerCase() === 'true',
         recommendations,
-        createdBy: user?.name || 'CSV Import',
+        createdBy: user?.full_name || 'CSV Import',
         createdAt: new Date(),
         lastModified: new Date()
       }
@@ -482,10 +478,7 @@ export default function CarePlanTemplates() {
                       <span className="text-gray-600 line-clamp-2">{template.barrier}</span>
                     </div>
                     
-                    <div className="flex items-start">
-                      <Target className="h-4 w-4 text-green-500 mr-1 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-600 line-clamp-2">{template.smartGoal}</span>
-                    </div>
+
 
                     {template.recommendations.length > 0 && (
                       <div className="flex items-center">
@@ -583,20 +576,7 @@ export default function CarePlanTemplates() {
                 />
               </div>
 
-              {/* SMART Goal */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  SMART Goal *
-                </label>
-                <textarea
-                  value={formData.smartGoal}
-                  onChange={(e) => setFormData(prev => ({ ...prev, smartGoal: e.target.value }))}
-                  rows={3}
-                  placeholder="Specific, Measurable, Achievable, Relevant, Time-bound goal..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+
 
               {/* Target Date / Ongoing */}
               <div>
