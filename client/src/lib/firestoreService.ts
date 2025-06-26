@@ -1211,6 +1211,42 @@ export const deleteCarePlanTemplate = async (templateId: string): Promise<void> 
   }
 }
 
+export const deleteAllCarePlanTemplates = async (): Promise<number> => {
+  try {
+    console.log('Starting bulk delete of all care plan templates...')
+    
+    // Get all templates first
+    const templatesRef = collection(db, COLLECTIONS.CARE_PLAN_TEMPLATES)
+    const querySnapshot = await getDocs(templatesRef)
+    
+    if (querySnapshot.empty) {
+      console.log('No templates found to delete')
+      return 0
+    }
+    
+    console.log('Found templates to delete:', querySnapshot.size)
+    
+    // Use batch delete for better performance
+    const batch = writeBatch(db)
+    let deleteCount = 0
+    
+    querySnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref)
+      deleteCount++
+      console.log('Adding to batch delete:', doc.id)
+    })
+    
+    // Commit the batch
+    await batch.commit()
+    console.log('Batch delete completed, deleted:', deleteCount)
+    
+    return deleteCount
+  } catch (error) {
+    console.error('Error in bulk delete operation:', error)
+    throw error
+  }
+}
+
 export const batchCreateCarePlanTemplates = async (templates: Omit<CarePlanTemplate, 'id'>[]): Promise<void> => {
   try {
     const batch = writeBatch(db)

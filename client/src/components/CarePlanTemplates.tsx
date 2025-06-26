@@ -6,6 +6,7 @@ import {
   createCarePlanTemplate, 
   updateCarePlanTemplate, 
   deleteCarePlanTemplate, 
+  deleteAllCarePlanTemplates,
   batchCreateCarePlanTemplates,
   getCarePlanCategories,
   saveCarePlanCategories,
@@ -549,20 +550,39 @@ export default function CarePlanTemplates() {
   }
 
   const deleteAllTemplates = async () => {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL care plan templates from Firestore. This action cannot be undone. Are you absolutely sure?')) {
+      return
+    }
+
     try {
       setLoading(true)
-      console.log('Force clearing all template data...')
+      console.log('Deleting all templates from Firestore...')
       
-      // Since the templates don't actually exist in Firestore, just clear the local state
+      // Get fresh data from Firestore to ensure we have the latest
+      const freshTemplates = await getCarePlanTemplates()
+      console.log('Found templates in Firestore to delete:', freshTemplates.length)
+      
+      if (freshTemplates.length === 0) {
+        console.log('No templates found in Firestore')
+        setTemplates([])
+        alert('No templates found in Firestore to delete.')
+        return
+      }
+      
+      // Use batch delete for better performance
+      const deletedCount = await deleteAllCarePlanTemplates()
+      console.log('Batch delete completed, deleted count:', deletedCount)
+      
+      // Clear local state
       setTemplates([])
       
-      // Clear any cached data and reload fresh from Firestore
+      // Reload to confirm deletion
       await loadData()
       
-      alert('All template data has been cleared successfully.')
+      alert(`Successfully deleted ${deletedCount} templates from Firestore. Only empty categories remain.`)
     } catch (error) {
-      console.error('Error clearing templates:', error)
-      alert('Error clearing template data. Please try again.')
+      console.error('Error deleting templates from Firestore:', error)
+      alert('Error deleting templates from Firestore. Please try again.')
     } finally {
       setLoading(false)
     }
