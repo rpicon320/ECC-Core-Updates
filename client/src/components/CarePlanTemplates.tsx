@@ -428,26 +428,17 @@ export default function CarePlanTemplates() {
   }
 
   const addRecommendation = () => {
-    console.log('Add recommendation clicked:', newRecommendation)
     if (newRecommendation.text.trim()) {
       const recommendation: Recommendation = {
         id: Date.now().toString(),
         text: newRecommendation.text.trim(),
         priority: newRecommendation.priority
       }
-      console.log('Adding recommendation:', recommendation)
-      setFormData(prev => {
-        console.log('Previous formData:', prev)
-        const newData = {
-          ...prev,
-          recommendations: [...prev.recommendations, recommendation]
-        }
-        console.log('New formData:', newData)
-        return newData
-      })
+      setFormData(prev => ({
+        ...prev,
+        recommendations: [...prev.recommendations, recommendation]
+      }))
       setNewRecommendation({ text: '', priority: 'medium' })
-    } else {
-      console.log('No text entered for recommendation')
     }
   }
 
@@ -1121,9 +1112,15 @@ export default function CarePlanTemplates() {
                   </div>
                 </div>
 
+                {/* Debug: Show count */}
+                <div className="text-sm text-gray-600 mb-2">
+                  Current recommendations: {formData.recommendations.length}
+                </div>
+
                 {/* Recommendations List */}
                 {formData.recommendations.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 border border-blue-200 p-3 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Added Recommendations:</h4>
                     {formData.recommendations.map(rec => (
                       <div key={rec.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-3">
                         <div className="flex items-center flex-1">
@@ -1133,6 +1130,7 @@ export default function CarePlanTemplates() {
                           <span className="text-gray-900">{rec.text}</span>
                         </div>
                         <button
+                          type="button"
                           onClick={() => removeRecommendation(rec.id)}
                           className="text-red-600 hover:bg-red-50 p-1 rounded ml-2"
                         >
