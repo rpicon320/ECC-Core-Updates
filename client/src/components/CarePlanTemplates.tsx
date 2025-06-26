@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List, Undo2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   getCarePlanTemplates, 
@@ -336,6 +336,50 @@ export default function CarePlanTemplates() {
     }
   }
 
+  const undoLastBulkUpload = async () => {
+    if (!confirm('Are you sure you want to undo the last bulk upload? This will remove templates created in the last 30 minutes.')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      // Get current timestamp minus 30 minutes
+      const thirtyMinutesAgo = new Date()
+      thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30)
+      
+      // Find templates created in the last 30 minutes
+      const recentTemplates = templates.filter(template => {
+        const createdAt = template.createdAt instanceof Date ? template.createdAt : new Date(template.createdAt)
+        return createdAt > thirtyMinutesAgo
+      })
+
+      if (recentTemplates.length === 0) {
+        alert('No templates found from the last 30 minutes to undo.')
+        return
+      }
+
+      if (!confirm(`Found ${recentTemplates.length} templates from the last 30 minutes. Delete these templates?`)) {
+        return
+      }
+
+      // Delete recent templates
+      const deletePromises = recentTemplates.map(template => 
+        template.id ? deleteCarePlanTemplate(template.id) : Promise.resolve()
+      )
+      
+      await Promise.all(deletePromises)
+      await loadData() // Refresh the data
+      
+      alert(`Successfully removed ${recentTemplates.length} templates from the last bulk upload.`)
+    } catch (error) {
+      console.error('Error undoing bulk upload:', error)
+      alert('Error undoing bulk upload. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800'
@@ -578,6 +622,14 @@ export default function CarePlanTemplates() {
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Bulk Upload
+              </button>
+              <button
+                onClick={undoLastBulkUpload}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center"
+                disabled={loading}
+              >
+                <Undo2 className="h-4 w-4 mr-2" />
+                Undo Last Upload
               </button>
               <button
                 onClick={() => openForm()}
