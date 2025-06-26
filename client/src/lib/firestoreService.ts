@@ -1171,6 +1171,14 @@ export const createCarePlanTemplate = async (templateData: Omit<CarePlanTemplate
 export const updateCarePlanTemplate = async (templateId: string, updates: Partial<CarePlanTemplate>): Promise<void> => {
   try {
     const templateRef = doc(db, COLLECTIONS.CARE_PLAN_TEMPLATES, templateId)
+    
+    // Check if document exists first
+    const docSnap = await getDoc(templateRef)
+    if (!docSnap.exists()) {
+      console.error('Template document does not exist:', templateId)
+      throw new Error('Template not found')
+    }
+    
     const preparedUpdates = prepareForFirestore({
       ...updates,
       lastModified: serverTimestamp()
