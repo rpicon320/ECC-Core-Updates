@@ -285,7 +285,7 @@ export default function CarePlanTemplates() {
   }
 
   const saveTemplate = () => {
-    if (!formData.category || !formData.concern || !formData.barrier || !formData.smartGoal) {
+    if (!formData.category || !formData.concern || !formData.goal || !formData.barrier) {
       alert('Please fill in all required fields')
       return
     }
@@ -300,7 +300,7 @@ export default function CarePlanTemplates() {
       targetDate: formData.isOngoing ? undefined : formData.targetDate,
       isOngoing: formData.isOngoing,
       recommendations: formData.recommendations,
-      createdBy: user?.full_name || 'Unknown',
+      createdBy: (user as any)?.firstName && (user as any)?.lastName ? `${(user as any).firstName} ${(user as any).lastName}` : 'Unknown',
       createdAt: editingTemplate?.createdAt || now,
       lastModified: now
     }
@@ -359,24 +359,24 @@ export default function CarePlanTemplates() {
       const row = lines[i].split(',')
       if (row.length < 5) continue // Skip invalid rows
 
-      const recommendationTexts = row[5] ? row[5].split('|').map(r => r.trim()).filter(r => r) : []
-      const recommendationPriorities = row[6] ? row[6].split('|').map(p => p.trim()).filter(p => p) : []
+      const recommendationTexts = row[4] ? row[4].split('|').map(r => r.trim()).filter(r => r) : []
       
       const recommendations: Recommendation[] = recommendationTexts.map((text, index) => ({
         id: `${Date.now()}-${index}`,
         text,
-        priority: (recommendationPriorities[index] as 'high' | 'medium' | 'low') || 'medium'
+        priority: 'medium' as const
       }))
 
       const template: CarePlanTemplate = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         category: row[0]?.trim() || '',
         concern: row[1]?.trim() || '',
-        barrier: row[2]?.trim() || '',
-        targetDate: row[3]?.trim() || '',
-        isOngoing: row[4]?.toLowerCase() === 'true',
+        goal: row[2]?.trim() || '',
+        barrier: row[3]?.trim() || '',
+        targetDate: '',
+        isOngoing: false,
         recommendations,
-        createdBy: user?.full_name || 'CSV Import',
+        createdBy: (user as any)?.firstName && (user as any)?.lastName ? `${(user as any).firstName} ${(user as any).lastName}` : 'CSV Import',
         createdAt: new Date(),
         lastModified: new Date()
       }
@@ -684,6 +684,21 @@ export default function CarePlanTemplates() {
                 </select>
               </div>
 
+              {/* Goal */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Goal *
+                </label>
+                <textarea
+                  value={formData.goal}
+                  onChange={(e) => setFormData(prev => ({ ...prev, goal: e.target.value }))}
+                  rows={3}
+                  placeholder="Describe the desired outcome or goal..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
               {/* Barrier */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -870,12 +885,13 @@ export default function CarePlanTemplates() {
                   <AlertTriangle className="h-4 w-4 text-yellow-600 mr-2 mt-0.5" />
                   <div className="text-yellow-800 text-xs">
                     <p className="font-medium">CSV Format Requirements:</p>
-                    <ul className="mt-1 list-disc list-inside space-y-1">
-                      <li>Headers: Category, Concern, Barrier, Target Date, Is Ongoing, Recommendations, Recommendation Priorities</li>
-                      <li>Separate multiple recommendations with | (pipe character)</li>
-                      <li>Use "true" or "false" for Is Ongoing column</li>
-                      <li>Date format: YYYY-MM-DD</li>
-                    </ul>
+                    <div className="space-y-1 text-gray-700">
+                      <div>1. Category</div>
+                      <div>2. Concern</div>
+                      <div>3. Goal</div>
+                      <div>4. Barrier</div>
+                      <div>5. Recommendations (separate multiple with |)</div>
+                    </div>
                   </div>
                 </div>
               </div>
