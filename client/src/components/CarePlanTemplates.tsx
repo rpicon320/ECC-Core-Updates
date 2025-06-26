@@ -173,7 +173,6 @@ export default function CarePlanTemplates() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<CarePlanTemplate | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('')
-  const [availableConcerns, setAvailableConcerns] = useState<string[]>([])
 
   // Form state
   const [formData, setFormData] = useState({
@@ -246,12 +245,7 @@ export default function CarePlanTemplates() {
 
   // Removed old localStorage loading - now handled by loadData() in the main useEffect
 
-  useEffect(() => {
-    if (formData.category) {
-      setAvailableConcerns(concerns[formData.category as keyof typeof concerns] || [])
-      setFormData(prev => ({ ...prev, concern: '' }))
-    }
-  }, [formData.category])
+
 
   // Loading state
   const [loading, setLoading] = useState(true)
@@ -407,7 +401,6 @@ export default function CarePlanTemplates() {
     })
     setNewRecommendation({ text: '', priority: 'medium' })
     setSelectedCategory('')
-    setAvailableConcerns([])
   }
 
   const openForm = (template?: CarePlanTemplate) => {
@@ -423,7 +416,6 @@ export default function CarePlanTemplates() {
         recommendations: template.recommendations
       })
       setSelectedCategory(template.category)
-      setAvailableConcerns(concerns[template.category as keyof typeof concerns] || [])
     } else {
       setEditingTemplate(null)
       resetForm()
@@ -1116,9 +1108,8 @@ export default function CarePlanTemplates() {
                   value={formData.category}
                   onChange={(e) => {
                     const selectedCategory = e.target.value
-                    setFormData(prev => ({ ...prev, category: selectedCategory, concern: '' }))
+                    setFormData(prev => ({ ...prev, category: selectedCategory }))
                     setSelectedCategory(selectedCategory)
-                    setAvailableConcerns(concerns[selectedCategory as keyof typeof concerns] || [])
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -1133,20 +1124,16 @@ export default function CarePlanTemplates() {
               {/* Concern */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Concern *
+                  Area of Concern *
                 </label>
-                <select
+                <textarea
                   value={formData.concern}
                   onChange={(e) => setFormData(prev => ({ ...prev, concern: e.target.value }))}
+                  rows={2}
+                  placeholder="Describe the specific area of concern..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  disabled={!formData.category}
-                >
-                  <option value="">Select a concern</option>
-                  {availableConcerns.map(concern => (
-                    <option key={concern} value={concern}>{concern}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Goal */}
