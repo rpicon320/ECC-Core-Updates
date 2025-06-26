@@ -609,12 +609,9 @@ export default function CarePlanTemplates() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-xs text-gray-500">
-                        {template.isOngoing ? 'Ongoing' : template.targetDate ? new Date(template.targetDate).toLocaleDateString() : 'No target date'}
-                      </span>
+                    <div className="flex items-center justify-end pt-2 border-t">
                       <span className="text-xs text-gray-400">
-                        {template.lastModified.toLocaleDateString()}
+                        Modified: {template.lastModified.toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -698,35 +695,7 @@ export default function CarePlanTemplates() {
 
 
 
-              {/* Target Date / Ongoing */}
-              <div>
-                <div className="flex items-center mb-3">
-                  <input
-                    type="checkbox"
-                    id="ongoing"
-                    checked={formData.isOngoing}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isOngoing: e.target.checked, targetDate: e.target.checked ? '' : prev.targetDate }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="ongoing" className="ml-2 text-sm text-gray-700">
-                    This is an ongoing goal (no target date)
-                  </label>
-                </div>
-                
-                {!formData.isOngoing && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Target Completion Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.targetDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, targetDate: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                )}
-              </div>
+
 
               {/* Recommendations */}
               <div>
