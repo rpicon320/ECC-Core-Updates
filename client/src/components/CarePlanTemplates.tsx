@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List, Undo2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List, Undo2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   getCarePlanTemplates, 
@@ -380,6 +380,42 @@ export default function CarePlanTemplates() {
     }
   }
 
+  const deleteAllTemplates = async () => {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL care plan templates. This action cannot be undone. Are you absolutely sure?')) {
+      return
+    }
+
+    if (!confirm(`You currently have ${templates.length} templates. Type "DELETE ALL" to confirm you want to remove all templates permanently.`)) {
+      return
+    }
+
+    // Additional confirmation with text input simulation
+    const userConfirmation = prompt('Please type "DELETE ALL" to confirm this permanent action:')
+    if (userConfirmation !== 'DELETE ALL') {
+      alert('Action cancelled. Templates were not deleted.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      // Delete all templates
+      const deletePromises = templates.map(template => 
+        template.id ? deleteCarePlanTemplate(template.id) : Promise.resolve()
+      )
+      
+      await Promise.all(deletePromises)
+      await loadData() // Refresh the data
+      
+      alert(`Successfully deleted all ${templates.length} care plan templates.`)
+    } catch (error) {
+      console.error('Error deleting all templates:', error)
+      alert('Error deleting templates. Some templates may not have been deleted. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800'
@@ -630,6 +666,14 @@ export default function CarePlanTemplates() {
               >
                 <Undo2 className="h-4 w-4 mr-2" />
                 Undo Last Upload
+              </button>
+              <button
+                onClick={deleteAllTemplates}
+                className="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-900 flex items-center"
+                disabled={loading || templates.length === 0}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Delete All Templates
               </button>
               <button
                 onClick={() => openForm()}
