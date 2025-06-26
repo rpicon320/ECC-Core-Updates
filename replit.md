@@ -168,3 +168,10 @@ This is a client management application with authentication, assessment modules,
   - Added empty category sections with quick "Add Template" buttons
   - Improved information density and organization
   - Enhanced visual hierarchy with icons and proper spacing
+✓ Standardized Care Plan Categories (January 2025)
+  - Fixed to exact 16-category system: Behavioral and Emotional Concerns, Cognitive, Daily habits and routines, End of life, Family and Caregiver Support, Financial, Healthcare Navigation, Housing, Legal, Medical/health status, Medications, Nutrition, Psychosocial, Safety, Support services, Other
+  - Added category mapping for automatic standardization of existing templates
+  - Added "Fix Categories" button to clean up mismatched categories
+  - Updated concerns dropdown to match standardized categories
+  - Added "Delete All Templates" and "Undo Last Upload" functions for bulk management
+  - Prevents creation of new categories during bulk upload unless manually created

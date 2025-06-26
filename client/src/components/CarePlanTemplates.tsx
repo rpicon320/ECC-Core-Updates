@@ -13,105 +13,155 @@ import {
   Recommendation
 } from '../lib/firestoreService'
 
-const categories = [
-  'Medical Management',
-  'Safety & Risk Assessment', 
-  'Functional Independence',
-  'Social & Family Support',
-  'Mental Health & Wellbeing',
-  'Nutrition & Hydration',
-  'Medication Management',
-  'Care Coordination',
-  'Housing & Environment',
-  'Transportation',
-  'Financial Planning',
-  'Legal & Advance Directives'
+// Standardized care plan categories - these are the only allowed categories
+const standardizedCategories = [
+  'Behavioral and Emotional Concerns',
+  'Cognitive',
+  'Daily habits and routines', 
+  'End of life',
+  'Family and Caregiver Support',
+  'Financial',
+  'Healthcare Navigation',
+  'Housing',
+  'Legal',
+  'Medical/health status',
+  'Medications',
+  'Nutrition',
+  'Psychosocial',
+  'Safety',
+  'Support services',
+  'Other'
 ]
 
 const concerns = {
-  'Medical Management': [
-    'Chronic Disease Management',
-    'Medication Adherence',
-    'Symptom Monitoring',
-    'Healthcare Appointments',
-    'Emergency Response Plan'
+  'Financial': [
+    'Budget Management',
+    'Healthcare Costs',
+    'Insurance Coverage',
+    'Benefits Access',
+    'Financial Exploitation Prevention',
+    'Money Management'
   ],
-  'Safety & Risk Assessment': [
-    'Fall Risk',
-    'Home Safety Hazards',
-    'Wandering/Elopement Risk',
-    'Cognitive Impairment Safety',
-    'Emergency Preparedness'
+  'Healthcare Navigation': [
+    'Healthcare Team Communication',
+    'Appointment Scheduling',
+    'Medical Records Management',
+    'Insurance Coordination',
+    'Provider Communication',
+    'Health System Navigation'
   ],
-  'Functional Independence': [
-    'Activities of Daily Living',
-    'Instrumental Activities',
-    'Mobility Issues',
-    'Vision/Hearing Impairment',
-    'Cognitive Function'
+  'Housing': [
+    'Home Modifications',
+    'Accessibility Issues',
+    'Housing Stability',
+    'Environmental Safety',
+    'Relocation Planning',
+    'Independent Living'
   ],
-  'Social & Family Support': [
-    'Social Isolation',
-    'Family Caregiver Stress',
-    'Community Engagement',
-    'Support System Gaps',
-    'Communication Issues'
+  'Legal': [
+    'Healthcare Directives',
+    'Power of Attorney',
+    'Legal Documentation',
+    'Guardianship Issues',
+    'Rights Protection',
+    'Estate Planning'
   ],
-  'Mental Health & Wellbeing': [
+  'Behavioral and Emotional Concerns': [
     'Depression/Anxiety',
     'Grief and Loss',
     'Behavioral Changes',
     'Sleep Disturbances',
-    'Agitation/Aggression'
+    'Emotional Support',
+    'Agitation',
+    'Confusion',
+    'Wandering'
   ],
-  'Nutrition & Hydration': [
+  'Cognitive': [
+    'Memory Loss',
+    'Confusion',
+    'Decision Making',
+    'Safety Awareness',
+    'Communication Difficulties',
+    'Orientation Issues'
+  ],
+  'Daily habits and routines': [
+    'Activities of Daily Living',
+    'Instrumental Activities',
+    'Mobility Issues',
+    'Personal Hygiene',
+    'Meal Preparation',
+    'Household Management'
+  ],
+  'End of life': [
+    'Advance Directives',
+    'Comfort Care',
+    'Pain Management',
+    'Family Communication',
+    'Spiritual Support',
+    'Hospice Services'
+  ],
+  'Family and Caregiver Support': [
+    'Caregiver Burden',
+    'Family Communication',
+    'Support Network Development',
+    'Respite Care',
+    'Education and Training',
+    'Stress Management'
+  ],
+  'Medical/health status': [
+    'Chronic Disease Management',
+    'Symptom Monitoring',
+    'Healthcare Appointments',
+    'Emergency Response Plan',
+    'Health Maintenance',
+    'Preventive Care'
+  ],
+  'Medications': [
+    'Medication Adherence',
+    'Polypharmacy',
+    'Side Effects',
+    'Medication Storage',
+    'Medication Management',
+    'Drug Interactions'
+  ],
+  'Nutrition': [
     'Poor Appetite',
     'Weight Loss/Gain',
     'Swallowing Difficulties',
-    'Meal Preparation',
-    'Dietary Restrictions'
+    'Dietary Restrictions',
+    'Malnutrition',
+    'Hydration'
   ],
-  'Medication Management': [
-    'Multiple Medications',
-    'Side Effects',
-    'Compliance Issues',
-    'Drug Interactions',
-    'Cost Concerns'
+  'Psychosocial': [
+    'Social Isolation',
+    'Community Engagement',
+    'Mental Health',
+    'Relationships',
+    'Recreation',
+    'Quality of Life'
   ],
-  'Care Coordination': [
-    'Multiple Providers',
-    'Communication Gaps',
+  'Safety': [
+    'Fall Risk',
+    'Home Safety Hazards',
+    'Driving Safety',
+    'Emergency Preparedness',
+    'Medication Safety',
+    'Cognitive Safety'
+  ],
+  'Support services': [
     'Service Coordination',
-    'Transition Planning',
-    'Documentation Issues'
+    'Resource Access',
+    'Transportation',
+    'Home Care Services',
+    'Community Programs',
+    'Emergency Services'
   ],
-  'Housing & Environment': [
-    'Home Modifications Needed',
-    'Unsafe Living Conditions',
-    'Housing Instability',
-    'Environmental Barriers',
-    'Accessibility Issues'
-  ],
-  'Transportation': [
-    'Limited Transportation',
-    'Driving Safety Concerns',
-    'Public Transit Barriers',
-    'Medical Appointment Access',
-    'Independence Limitations'
-  ],
-  'Financial Planning': [
-    'Limited Financial Resources',
-    'Insurance Coverage Gaps',
-    'Benefit Eligibility',
-    'Long-term Care Funding',
-    'Financial Exploitation Risk'
-  ],
-  'Legal & Advance Directives': [
-    'Missing Legal Documents',
-    'Decision-Making Capacity',
-    'Guardian/Conservator Needs',
-    'Healthcare Directives',
-    'Estate Planning'
+  'Other': [
+    'Communication',
+    'Technology',
+    'Cultural/Spiritual',
+    'Pet Care',
+    'Miscellaneous'
   ]
 }
 
@@ -204,6 +254,26 @@ export default function CarePlanTemplates() {
   // Loading state
   const [loading, setLoading] = useState(true)
 
+  // Standardized categories - these are the only allowed categories
+  const standardCategories = [
+    'Behavioral and Emotional Concerns',
+    'Cognitive',
+    'Daily habits and routines',
+    'End of life',
+    'Family and Caregiver Support',
+    'Financial',
+    'Healthcare Navigation',
+    'Housing',
+    'Legal',
+    'Medical/health status',
+    'Medications',
+    'Nutrition',
+    'Psychosocial',
+    'Safety',
+    'Support services',
+    'Other'
+  ]
+
   // Load templates and categories from Firestore
   const loadData = async () => {
     setLoading(true)
@@ -213,9 +283,92 @@ export default function CarePlanTemplates() {
         getCarePlanCategories()
       ])
       setTemplates(templatesData)
-      setCategories(categoriesData)
+      
+      // Use standard categories, but merge with any user-created categories from Firestore
+      const mergedCategories = [...standardCategories]
+      categoriesData.forEach(cat => {
+        if (!mergedCategories.includes(cat)) {
+          mergedCategories.push(cat)
+        }
+      })
+      setCategories(mergedCategories)
+      
+      // Save standardized categories to Firestore if they don't match
+      if (JSON.stringify(categoriesData.sort()) !== JSON.stringify(standardCategories.sort())) {
+        await saveCarePlanCategories(mergedCategories)
+      }
     } catch (error) {
       console.error('Error loading care plan data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Function to clean up and standardize template categories
+  const cleanupTemplateCategories = async () => {
+    if (!confirm('This will standardize all template categories to match the approved list. Any templates with non-standard categories will be moved to "Other" or closest match. Continue?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      // Create mapping for common variations to standard categories
+      const categoryMapping: { [key: string]: string } = {
+        'Medical Management': 'Medical/health status',
+        'Safety & Risk Assessment': 'Safety',
+        'Functional Independence': 'Daily habits and routines',
+        'Social & Family Support': 'Family and Caregiver Support',
+        'Mental Health & Wellbeing': 'Behavioral and Emotional Concerns',
+        'Nutrition & Hydration': 'Nutrition',
+        'Medication Management': 'Medications',
+        'Care Coordination': 'Healthcare Navigation',
+        'Housing & Environment': 'Housing',
+        'Transportation': 'Other',
+        'Financial Planning': 'Financial',
+        'Legal & Advance Directives': 'Legal',
+        'Activities': 'Daily habits and routines',
+        'Communication': 'Other',
+        'Environment': 'Housing',
+        'Family': 'Family and Caregiver Support',
+        'Cognitive and Memory Issues': 'Cognitive',
+        'Social Support and Engagement': 'Psychosocial',
+        'Activities of Daily Living': 'Daily habits and routines',
+        'Mobility and Movement': 'Other',
+        'Environmental Concerns': 'Housing',
+        'Technology and Equipment': 'Other',
+        'Spiritual and Cultural': 'Psychosocial',
+        'Quality of Life': 'Psychosocial'
+      }
+
+      let updatedCount = 0
+      const updatePromises = templates.map(async (template) => {
+        let newCategory = template.category
+        
+        // Check if category needs to be standardized
+        if (!standardCategories.includes(template.category)) {
+          newCategory = categoryMapping[template.category] || 'Other'
+          
+          if (template.id && newCategory !== template.category) {
+            await updateCarePlanTemplate(template.id, { category: newCategory })
+            updatedCount++
+          }
+        }
+      })
+
+      await Promise.all(updatePromises)
+      
+      // Reload data to show changes
+      await loadData()
+      
+      if (updatedCount > 0) {
+        alert(`Successfully standardized ${updatedCount} template categories.`)
+      } else {
+        alert('All template categories are already standardized.')
+      }
+    } catch (error) {
+      console.error('Error cleaning up categories:', error)
+      alert('Error standardizing categories. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -666,6 +819,14 @@ export default function CarePlanTemplates() {
               >
                 <Undo2 className="h-4 w-4 mr-2" />
                 Undo Last Upload
+              </button>
+              <button
+                onClick={cleanupTemplateCategories}
+                className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 flex items-center"
+                disabled={loading || templates.length === 0}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Fix Categories
               </button>
               <button
                 onClick={deleteAllTemplates}
