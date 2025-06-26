@@ -253,6 +253,9 @@ export default function CarePlanTemplates() {
 
   // Loading state
   const [loading, setLoading] = useState(true)
+  
+  // Track if categories have been fixed (to hide the button)
+  const [categoriesFixed, setCategoriesFixed] = useState(false)
 
   // Standardized categories - these are the only allowed categories
   const standardCategories = [
@@ -305,8 +308,8 @@ export default function CarePlanTemplates() {
   }
 
   // Function to clean up and standardize template categories
-  const cleanupTemplateCategories = async () => {
-    if (!confirm('This will standardize all template categories to match the approved list. Any templates with non-standard categories will be moved to "Other" or closest match. Continue?')) {
+  const cleanupTemplateCategories = async (silent = false) => {
+    if (!silent && !confirm('This will standardize all template categories to match the approved list. Any templates with non-standard categories will be moved to "Other" or closest match. Continue?')) {
       return
     }
 
@@ -361,6 +364,9 @@ export default function CarePlanTemplates() {
       // Reload data to show changes
       await loadData()
       
+      // Mark categories as fixed to hide the button
+      setCategoriesFixed(true)
+      
       if (updatedCount > 0) {
         alert(`Successfully standardized ${updatedCount} template categories.`)
       } else {
@@ -374,9 +380,16 @@ export default function CarePlanTemplates() {
     }
   }
 
-  // Initialize data on component mount
+  // Initialize data on component mount and run fix categories once
   useEffect(() => {
-    loadData()
+    const initializeData = async () => {
+      await loadData()
+      // Auto-run the fix categories function once (silently)
+      if (!categoriesFixed) {
+        await cleanupTemplateCategories(true)
+      }
+    }
+    initializeData()
   }, [])
 
   const resetForm = () => {
@@ -820,14 +833,16 @@ export default function CarePlanTemplates() {
                 <Undo2 className="h-4 w-4 mr-2" />
                 Undo Last Upload
               </button>
-              <button
-                onClick={cleanupTemplateCategories}
-                className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 flex items-center"
-                disabled={loading || templates.length === 0}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Fix Categories
-              </button>
+              {!categoriesFixed && (
+                <button
+                  onClick={() => cleanupTemplateCategories(false)}
+                  className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 flex items-center"
+                  disabled={loading || templates.length === 0}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Fix Categories
+                </button>
+              )}
               <button
                 onClick={deleteAllTemplates}
                 className="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-900 flex items-center"
