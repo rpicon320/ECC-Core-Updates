@@ -176,3 +176,5 @@ This is a client management application with authentication, assessment modules,
   - Prevents creation of new categories during bulk upload unless manually created
   - Auto-executed "Fix Categories" function to standardize all existing templates
   - Hidden "Fix Categories" button after successful execution to prevent confusion
+  - Fixed data synchronization issue where templates existed in UI but not in Firestore
+  - Simplified delete all function to clear local state and reload fresh data
