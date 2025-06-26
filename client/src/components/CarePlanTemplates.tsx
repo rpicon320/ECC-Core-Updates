@@ -328,9 +328,10 @@ export default function CarePlanTemplates() {
 
   const downloadTemplate = () => {
     const csvContent = [
-      'Category,Concern,Barrier,Target Date,Is Ongoing,Recommendations (separate multiple with |),Recommendation Priorities (separate multiple with |)',
-      'Medical Management,Chronic Disease Management,Patient struggles with daily medication adherence,2024-03-01,false,Set up pill organizer|Create medication reminder app|Schedule weekly pharmacy check-ins,high|medium|low',
-      'Safety & Risk Assessment,Fall Risk,Home has multiple trip hazards and poor lighting,2024-04-01,false,Install grab bars in bathroom|Improve lighting in hallways|Remove loose rugs,high|high|medium'
+      'Category,Concern,Barrier,Recommendations (separate multiple with |)',
+      'Medical/health status,Medication adherence issues,Limited understanding of medication importance,Set up pill organizer|Provide medication education|Schedule regular check-ins',
+      'Safety,Fall risk at home,Cluttered walkways and poor lighting,Install grab bars|Improve lighting|Clear walkways|Provide walker',
+      'Daily habits and routines,Difficulty with bathing,Mobility limitations and fear of falling,Shower chair installation|Grab bar placement|Personal care assistance|Safety assessment'
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
