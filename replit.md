@@ -143,7 +143,7 @@ This is a client management application with authentication, assessment modules,
   - 16 predefined categories including Behavioral/Emotional, Cognitive, Medical/health, etc.
   - Template count tracking per category with cascade updates/deletions
   - Bulk CSV upload functionality with downloadable template
-  - Simplified CSV format: Category, Concern, Barrier, Recommendations only
+  - Simplified CSV format: Category, Concern, Goal, Barrier, Recommendations only
   - Target dates and ongoing status set individually per care plan
   - CSV format validation and error handling
   - Progress tracking for file uploads

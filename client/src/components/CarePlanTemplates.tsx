@@ -12,6 +12,7 @@ interface CarePlanTemplate {
   id: string
   category: string
   concern: string
+  goal: string
   barrier: string
   targetDate?: string
   isOngoing: boolean
@@ -135,6 +136,7 @@ export default function CarePlanTemplates() {
   const [formData, setFormData] = useState({
     category: '',
     concern: '',
+    goal: '',
     barrier: '',
     targetDate: '',
     isOngoing: false,
@@ -222,6 +224,7 @@ export default function CarePlanTemplates() {
     setFormData({
       category: '',
       concern: '',
+      goal: '',
       barrier: '',
       targetDate: '',
       isOngoing: false,
@@ -238,6 +241,7 @@ export default function CarePlanTemplates() {
       setFormData({
         category: template.category,
         concern: template.concern,
+        goal: template.goal,
         barrier: template.barrier,
         targetDate: template.targetDate || '',
         isOngoing: template.isOngoing,
@@ -291,6 +295,7 @@ export default function CarePlanTemplates() {
       id: editingTemplate?.id || Date.now().toString(),
       category: formData.category,
       concern: formData.concern,
+      goal: formData.goal,
       barrier: formData.barrier,
       targetDate: formData.isOngoing ? undefined : formData.targetDate,
       isOngoing: formData.isOngoing,
@@ -328,10 +333,10 @@ export default function CarePlanTemplates() {
 
   const downloadTemplate = () => {
     const csvContent = [
-      'Category,Concern,Barrier,Recommendations (separate multiple with |)',
-      'Medical/health status,Medication adherence issues,Limited understanding of medication importance,Set up pill organizer|Provide medication education|Schedule regular check-ins',
-      'Safety,Fall risk at home,Cluttered walkways and poor lighting,Install grab bars|Improve lighting|Clear walkways|Provide walker',
-      'Daily habits and routines,Difficulty with bathing,Mobility limitations and fear of falling,Shower chair installation|Grab bar placement|Personal care assistance|Safety assessment'
+      'Category,Concern,Goal,Barrier,Recommendations (separate multiple with |)',
+      'Medical/health status,Medication adherence issues,Client will take medications as prescribed daily,Limited understanding of medication importance,Set up pill organizer|Provide medication education|Schedule regular check-ins',
+      'Safety,Fall risk at home,Client will safely navigate home environment without falls,Cluttered walkways and poor lighting,Install grab bars|Improve lighting|Clear walkways|Provide walker',
+      'Daily habits and routines,Difficulty with bathing,Client will maintain personal hygiene independently,Mobility limitations and fear of falling,Shower chair installation|Grab bar placement|Personal care assistance|Safety assessment'
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
