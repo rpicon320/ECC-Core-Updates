@@ -1193,10 +1193,20 @@ export const updateCarePlanTemplate = async (templateId: string, updates: Partia
 
 export const deleteCarePlanTemplate = async (templateId: string): Promise<void> => {
   try {
+    console.log('Attempting to delete template:', templateId)
     const templateRef = doc(db, COLLECTIONS.CARE_PLAN_TEMPLATES, templateId)
+    
+    // Check if document exists before trying to delete
+    const docSnap = await getDoc(templateRef)
+    if (!docSnap.exists()) {
+      console.warn('Template document does not exist:', templateId)
+      return // Don't throw error for non-existent docs
+    }
+    
     await deleteDoc(templateRef)
+    console.log('Successfully deleted template:', templateId)
   } catch (error) {
-    console.error('Error deleting care plan template:', error)
+    console.error('Error deleting care plan template:', templateId, error)
     throw error
   }
 }
