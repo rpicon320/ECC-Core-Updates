@@ -616,29 +616,72 @@ export default function CarePlanTemplates() {
     window.URL.revokeObjectURL(url)
   }
 
+  // Proper CSV parser that handles quoted fields with commas
+  const parseCSVLine = (line: string): string[] => {
+    const result = []
+    let current = ''
+    let inQuotes = false
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      
+      if (char === '"') {
+        inQuotes = !inQuotes
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    
+    result.push(current.trim())
+    return result
+  }
+
   const parseCSV = (text: string): CarePlanTemplate[] => {
     const lines = text.split('\n').filter(line => line.trim())
-    const headers = lines[0].split(',')
+    if (lines.length < 2) return []
+    
+    const headers = parseCSVLine(lines[0])
+    console.log('CSV Headers:', headers)
     const templates: CarePlanTemplate[] = []
 
     for (let i = 1; i < lines.length; i++) {
-      const row = lines[i].split(',')
-      if (row.length < 5) continue // Skip invalid rows
+      const row = parseCSVLine(lines[i])
+      console.log(`Row ${i}:`, row)
+      
+      if (row.length < 4) {
+        console.log(`Skipping row ${i}: insufficient columns (${row.length})`)
+        continue // Skip invalid rows
+      }
 
-      const recommendationTexts = row[4] ? row[4].split('|').map(r => r.trim()).filter(r => r) : []
+      // Clean up field values by removing extra quotes
+      const cleanField = (field: string) => field.replace(/^["']|["']$/g, '').trim()
+      
+      const category = cleanField(row[0] || '')
+      const concern = cleanField(row[1] || '')
+      const goal = cleanField(row[2] || '')
+      const barrier = cleanField(row[3] || '')
+      const recommendationsText = cleanField(row[4] || '')
+      
+      console.log('Parsed fields:', { category, concern, goal, barrier, recommendationsText })
+
+      const recommendationTexts = recommendationsText ? 
+        recommendationsText.split('|').map(r => r.trim()).filter(r => r) : []
       
       const recommendations: Recommendation[] = recommendationTexts.map((text, index) => ({
-        id: `${Date.now()}-${index}`,
+        id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 6)}`,
         text,
         priority: 'medium' as const
       }))
 
       const template: CarePlanTemplate = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        category: row[0]?.trim() || '',
-        concern: row[1]?.trim() || '',
-        goal: row[2]?.trim() || '',
-        barrier: row[3]?.trim() || '',
+        category,
+        concern,
+        goal,
+        barrier,
         targetDate: '',
         isOngoing: false,
         recommendations,
@@ -649,7 +692,10 @@ export default function CarePlanTemplates() {
 
       // Validate required fields
       if (template.category && template.concern && template.barrier) {
+        console.log('Valid template created:', template.category, '-', template.concern)
         templates.push(template)
+      } else {
+        console.log('Skipping invalid template - missing required fields:', { category, concern, barrier })
       }
     }
 
