@@ -282,10 +282,12 @@ export default function CarePlanTemplates() {
   const loadData = async () => {
     setLoading(true)
     try {
+      console.log('Loading templates from Firestore...')
       const [templatesData, categoriesData] = await Promise.all([
         getCarePlanTemplates(),
         getCarePlanCategories()
       ])
+      console.log('Loaded templates:', templatesData.length)
       setTemplates(templatesData)
       
       // Always use standardized categories
@@ -561,16 +563,21 @@ export default function CarePlanTemplates() {
 
     try {
       setLoading(true)
+      console.log('Starting to delete all templates...', templates.length)
       
       // Delete all templates
-      const deletePromises = templates.map(template => 
-        template.id ? deleteCarePlanTemplate(template.id) : Promise.resolve()
-      )
+      const deletePromises = templates.map(template => {
+        console.log('Deleting template:', template.id, template.concern)
+        return template.id ? deleteCarePlanTemplate(template.id) : Promise.resolve()
+      })
       
       await Promise.all(deletePromises)
-      await loadData() // Refresh the data
+      console.log('All delete operations completed, reloading data...')
       
-      alert(`Successfully deleted all ${templates.length} care plan templates.`)
+      await loadData() // Refresh the data
+      console.log('Data reloaded, new template count:', templates.length)
+      
+      alert(`Successfully deleted all care plan templates.`)
     } catch (error) {
       console.error('Error deleting all templates:', error)
       alert('Error deleting templates. Some templates may not have been deleted. Please try again.')
