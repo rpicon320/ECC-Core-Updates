@@ -1178,31 +1178,33 @@ export default function CarePlanTemplates() {
                 
                 {/* Add New Recommendation */}
                 <div className="bg-gray-50 p-4 rounded-md mb-4">
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
+                  <div className="space-y-3">
+                    <textarea
                       value={newRecommendation.text}
                       onChange={(e) => setNewRecommendation(prev => ({ ...prev, text: e.target.value }))}
-                      placeholder="Enter recommendation..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      onKeyPress={(e) => e.key === 'Enter' && addRecommendation()}
+                      placeholder="Enter detailed recommendation (e.g., 'Increase Visits from Family and Friends: Facilitate regular, short visits from loved ones or spiritual advisors who can offer comfort and familiarity.')"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
                     />
-                    <select
-                      value={newRecommendation.priority}
-                      onChange={(e) => setNewRecommendation(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={addRecommendation}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex-shrink-0"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
+                    <div className="flex gap-2">
+                      <select
+                        value={newRecommendation.priority}
+                        onChange={(e) => setNewRecommendation(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={addRecommendation}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Recommendation
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1216,20 +1218,24 @@ export default function CarePlanTemplates() {
                   <div className="space-y-2 border border-blue-200 p-3 rounded-lg">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Added Recommendations:</h4>
                     {formData.recommendations.map(rec => (
-                      <div key={rec.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-3">
-                        <div className="flex items-center flex-1">
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mr-3 ${getPriorityColor(rec.priority)}`}>
-                            {rec.priority}
-                          </span>
-                          <span className="text-gray-900">{rec.text}</span>
+                      <div key={rec.id} className="bg-white border border-gray-200 rounded-md p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center mb-2">
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(rec.priority)}`}>
+                                {rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority
+                              </span>
+                            </div>
+                            <p className="text-gray-900 text-sm leading-relaxed">{rec.text}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeRecommendation(rec.id)}
+                            className="text-red-600 hover:bg-red-50 p-1 rounded ml-3 flex-shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeRecommendation(rec.id)}
-                          className="text-red-600 hover:bg-red-50 p-1 rounded ml-2"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
                       </div>
                     ))}
                   </div>
