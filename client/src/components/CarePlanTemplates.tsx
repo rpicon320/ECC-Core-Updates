@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen, ChevronDown, ChevronRight, List } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   getCarePlanTemplates, 
@@ -169,6 +169,28 @@ export default function CarePlanTemplates() {
   const [addingNewCategory, setAddingNewCategory] = useState(false)
   const [editingValue, setEditingValue] = useState('')
   const [showConfirmTooltip, setShowConfirmTooltip] = useState<string | null>(null)
+  
+  // Accordion state management
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+
+  const toggleCategory = (category: string) => {
+    const newExpanded = new Set(expandedCategories)
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category)
+    } else {
+      newExpanded.add(category)
+    }
+    setExpandedCategories(newExpanded)
+  }
+
+  // Group templates by category
+  const templatesByCategory = templates.reduce((acc, template) => {
+    if (!acc[template.category]) {
+      acc[template.category] = []
+    }
+    acc[template.category].push(template)
+    return acc
+  }, {} as Record<string, CarePlanTemplate[]>)
 
   // Removed old localStorage loading - now handled by loadData() in the main useEffect
 
@@ -591,59 +613,121 @@ export default function CarePlanTemplates() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {templates.map(template => (
-                <div key={template.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full mb-2">
-                        {template.category}
-                      </span>
-                      <h3 className="font-medium text-gray-900 text-sm">{template.concern}</h3>
-                    </div>
-                    <div className="flex space-x-1 ml-2">
-                      <button
-                        onClick={() => openForm(template)}
-                        className="text-blue-600 hover:bg-blue-50 p-1 rounded"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => template.id && deleteTemplate(template.id)}
-                        className="text-red-600 hover:bg-red-50 p-1 rounded"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-4 w-4 text-orange-500 mr-1 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-600 line-clamp-2">{template.barrier}</span>
-                    </div>
-                    
-
-
-                    {template.recommendations.length > 0 && (
-                      <div className="flex items-center">
-                        <Lightbulb className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span className="text-gray-500 text-xs">
-                          {template.recommendations.length} recommendation{template.recommendations.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-end pt-2 border-t">
-                      <span className="text-xs text-gray-400">
-                        Modified: {template.lastModified.toLocaleDateString()}
+            <div className="space-y-2">
+              {Object.entries(templatesByCategory).sort(([a], [b]) => a.localeCompare(b)).map(([category, categoryTemplates]) => (
+                <div key={category} className="border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Category Header */}
+                  <button
+                    onClick={() => toggleCategory(category)}
+                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 border-b border-gray-200 flex items-center justify-between text-left transition-colors"
+                  >
+                    <div className="flex items-center">
+                      {expandedCategories.has(category) ? (
+                        <ChevronDown className="h-4 w-4 text-gray-500 mr-3" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-500 mr-3" />
+                      )}
+                      <h3 className="font-medium text-gray-900">{category}</h3>
+                      <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                        {categoryTemplates.length}
                       </span>
                     </div>
-                  </div>
+                    <List className="h-4 w-4 text-gray-400" />
+                  </button>
+
+                  {/* Templates List */}
+                  {expandedCategories.has(category) && (
+                    <div className="divide-y divide-gray-100">
+                      {categoryTemplates.map(template => (
+                        <div key={template.id} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                <h4 className="font-medium text-gray-900 mr-3">{template.concern}</h4>
+                                <div className="flex space-x-1">
+                                  <button
+                                    onClick={() => openForm(template)}
+                                    className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                                    title="Edit"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => template.id && deleteTemplate(template.id)}
+                                    className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <p className="text-sm text-blue-600 mb-2 italic">Goal: {template.goal}</p>
+                              
+                              <div className="flex items-start mb-2">
+                                <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                                <span className="text-sm text-gray-600">{template.barrier}</span>
+                              </div>
+
+                              {template.recommendations.length > 0 && (
+                                <div className="flex items-start">
+                                  <Lightbulb className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                                  <div className="text-sm text-gray-600">
+                                    <div className="font-medium mb-1">Recommendations ({template.recommendations.length}):</div>
+                                    <ul className="list-disc list-inside space-y-1">
+                                      {template.recommendations.slice(0, 3).map((rec, index) => (
+                                        <li key={index} className="text-gray-600">{rec.text}</li>
+                                      ))}
+                                      {template.recommendations.length > 3 && (
+                                        <li className="text-gray-500 italic">+{template.recommendations.length - 3} more...</li>
+                                      )}
+                                    </ul>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                                <span className="text-xs text-gray-500">Created by: {template.createdBy}</span>
+                                <span className="text-xs text-gray-400">
+                                  Modified: {template.lastModified.toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
+
+              {/* Show categories with no templates */}
+              {categories.filter(cat => !templatesByCategory[cat]).length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Empty Categories</h4>
+                  <div className="space-y-1">
+                    {categories.filter(cat => !templatesByCategory[cat]).map(category => (
+                      <div key={category} className="border border-gray-200 rounded-lg">
+                        <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <ChevronRight className="h-4 w-4 text-gray-400 mr-3" />
+                            <h3 className="font-medium text-gray-500">{category}</h3>
+                            <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-medium px-2 py-1 rounded-full">
+                              0
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => openForm()}
+                            className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs"
+                          >
+                            Add Template
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
