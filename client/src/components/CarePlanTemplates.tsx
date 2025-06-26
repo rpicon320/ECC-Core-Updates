@@ -283,11 +283,14 @@ export default function CarePlanTemplates() {
     setLoading(true)
     try {
       console.log('Loading templates from Firestore...')
-      const [templatesData, categoriesData] = await Promise.all([
-        getCarePlanTemplates(),
-        getCarePlanCategories()
-      ])
+      
+      // Force a fresh fetch from Firestore
+      const templatesData = await getCarePlanTemplates()
+      const categoriesData = await getCarePlanCategories()
+      
       console.log('Loaded templates:', templatesData.length)
+      console.log('Template IDs:', templatesData.map(t => t.id))
+      
       setTemplates(templatesData)
       
       // Always use standardized categories
@@ -577,6 +580,12 @@ export default function CarePlanTemplates() {
       
       await Promise.all(deletePromises)
       console.log('All delete operations completed, reloading data...')
+      
+      // Force clear the local state first
+      setTemplates([])
+      
+      // Wait a moment for Firestore to propagate changes
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
       await loadData() // Refresh the data
       console.log('Data reloaded, new template count:', templates.length)
