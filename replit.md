@@ -138,6 +138,8 @@ This is a client management application with authentication, assessment modules,
   - Full CRUD operations with localStorage persistence
   - Template reuse for consistent care planning across clients
   - Category management system with add, edit, delete functionality
+  - Enhanced inline editing with confirmation tooltips for category updates
+  - Real-time validation and impact warnings for category changes
   - 16 predefined categories including Behavioral/Emotional, Cognitive, Medical/health, etc.
   - Template count tracking per category with cascade updates/deletions
   - Bulk CSV upload functionality with downloadable template

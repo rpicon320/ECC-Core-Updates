@@ -174,6 +174,8 @@ export default function CarePlanTemplates() {
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [addingNewCategory, setAddingNewCategory] = useState(false)
+  const [editingValue, setEditingValue] = useState('')
+  const [showConfirmTooltip, setShowConfirmTooltip] = useState<string | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -438,21 +440,53 @@ export default function CarePlanTemplates() {
     }
   }
 
-  const updateCategory = (oldName: string, newName: string) => {
-    if (newName.trim() && oldName !== newName.trim() && !categories.includes(newName.trim())) {
-      const updatedCategories = categories.map(cat => cat === oldName ? newName.trim() : cat).sort()
-      saveCategories(updatedCategories)
+  const startEditCategory = (categoryName: string) => {
+    setEditingCategory(categoryName)
+    setEditingValue(categoryName)
+    setShowConfirmTooltip(null)
+  }
+
+  const cancelEditCategory = () => {
+    setEditingCategory(null)
+    setEditingValue('')
+    setShowConfirmTooltip(null)
+  }
+
+  const confirmUpdateCategory = (oldName: string, newName: string) => {
+    if (newName.trim() && oldName !== newName.trim()) {
+      if (categories.includes(newName.trim())) {
+        alert('A category with this name already exists.')
+        return
+      }
       
-      // Update any templates that use this category
-      const updatedTemplates = templates.map(template => 
-        template.category === oldName 
-          ? { ...template, category: newName.trim(), lastModified: new Date() }
-          : template
-      )
-      saveTemplates(updatedTemplates)
+      const templateCount = getCategoryUsageCount(oldName)
+      if (templateCount > 0) {
+        setShowConfirmTooltip(oldName)
+        return
+      }
       
+      updateCategory(oldName, newName)
+    } else if (newName.trim() === oldName) {
       setEditingCategory(null)
+      setEditingValue('')
     }
+  }
+
+  const updateCategory = (oldName: string, newName: string) => {
+    const updatedCategories = categories.map(cat => cat === oldName ? newName.trim() : cat).sort()
+    saveCategories(updatedCategories)
+    
+    // Update any templates that use this category
+    const updatedTemplates = templates.map(template => 
+      template.category === oldName 
+        ? { ...template, category: newName.trim(), lastModified: new Date() }
+        : template
+    )
+    saveTemplates(updatedTemplates)
+    
+    setEditingCategory(null)
+    setEditingValue('')
+    setShowConfirmTooltip(null)
   }
 
   const deleteCategory = (categoryName: string) => {
@@ -914,6 +948,8 @@ export default function CarePlanTemplates() {
                     setEditingCategory(null)
                     setAddingNewCategory(false)
                     setNewCategoryName('')
+                    setEditingValue('')
+                    setShowConfirmTooltip(null)
                   }}
                   className="text-white hover:bg-purple-700 p-1 rounded"
                 >
@@ -979,25 +1015,65 @@ export default function CarePlanTemplates() {
                 {categories.map((category, index) => (
                   <div key={category} className="border border-gray-200 rounded-md p-3 hover:bg-gray-50">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
+                      <div className="flex-1 relative">
                         {editingCategory === category ? (
-                          <input
-                            type="text"
-                            defaultValue={category}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                updateCategory(category, e.currentTarget.value)
-                              }
-                              if (e.key === 'Escape') {
-                                setEditingCategory(null)
-                              }
-                            }}
-                            onBlur={(e) => {
-                              updateCategory(category, e.target.value)
-                            }}
-                            autoFocus
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  confirmUpdateCategory(category, editingValue)
+                                }
+                                if (e.key === 'Escape') {
+                                  cancelEditCategory()
+                                }
+                              }}
+                              onBlur={() => {
+                                // Delay to allow clicking confirmation tooltip
+                                setTimeout(() => {
+                                  if (!showConfirmTooltip) {
+                                    confirmUpdateCategory(category, editingValue)
+                                  }
+                                }, 150)
+                              }}
+                              autoFocus
+                            />
+                            
+                            {/* Confirmation Tooltip */}
+                            {showConfirmTooltip === category && (
+                              <div className="absolute top-full left-0 mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-lg z-10 w-64">
+                                <div className="flex items-start">
+                                  <AlertTriangle className="h-4 w-4 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                                  <div className="text-sm">
+                                    <p className="font-medium text-yellow-800 mb-1">Confirm Category Update</p>
+                                    <p className="text-yellow-700 mb-3">
+                                      This will update {getCategoryUsageCount(category)} template{getCategoryUsageCount(category) !== 1 ? 's' : ''} from "{category}" to "{editingValue}".
+                                    </p>
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => updateCategory(category, editingValue)}
+                                        className="bg-yellow-600 text-white px-2 py-1 rounded text-xs hover:bg-yellow-700"
+                                      >
+                                        Confirm
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setShowConfirmTooltip(null)
+                                          cancelEditCategory()
+                                        }}
+                                        className="bg-gray-400 text-white px-2 py-1 rounded text-xs hover:bg-gray-500"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <div>
                             <span className="font-medium text-gray-900">{category}</span>
@@ -1009,20 +1085,41 @@ export default function CarePlanTemplates() {
                       </div>
                       
                       <div className="flex items-center space-x-1 ml-3">
-                        <button
-                          onClick={() => setEditingCategory(editingCategory === category ? null : category)}
-                          className="text-blue-600 hover:bg-blue-50 p-1 rounded"
-                          title="Edit category"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => deleteCategory(category)}
-                          className="text-red-600 hover:bg-red-50 p-1 rounded"
-                          title="Delete category"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        {editingCategory === category ? (
+                          <>
+                            <button
+                              onClick={() => confirmUpdateCategory(category, editingValue)}
+                              className="text-green-600 hover:bg-green-50 p-1 rounded"
+                              title="Save changes"
+                            >
+                              <Save className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={cancelEditCategory}
+                              className="text-gray-600 hover:bg-gray-50 p-1 rounded"
+                              title="Cancel edit"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => startEditCategory(category)}
+                              className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                              title="Edit category"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => deleteCategory(category)}
+                              className="text-red-600 hover:bg-red-50 p-1 rounded"
+                              title="Delete category"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1047,6 +1144,8 @@ export default function CarePlanTemplates() {
                   setEditingCategory(null)
                   setAddingNewCategory(false)
                   setNewCategoryName('')
+                  setEditingValue('')
+                  setShowConfirmTooltip(null)
                 }}
                 className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
               >
