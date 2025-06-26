@@ -885,20 +885,21 @@ export default function CarePlanTemplates() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-500">Loading care plan templates...</p>
             </div>
-          ) : templates.length === 0 ? (
-            <div className="text-center py-12">
-              <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No templates yet</h3>
-              <p className="text-gray-500 mb-4">Create your first care plan template to get started</p>
-              <button
-                onClick={() => openForm()}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Create Template
-              </button>
-            </div>
           ) : (
             <div className="space-y-2">
+              {/* Show helpful message when no templates exist at all */}
+              {templates.length === 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <Target className="h-5 w-5 text-blue-600 mr-3" />
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-800">Start Creating Templates</h4>
+                      <p className="text-sm text-blue-600">Expand any category below and click "Add Template" to create your first care plan template.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {standardCategories.map(category => {
                 const categoryTemplates = templatesByCategory[category] || []
                 return (
