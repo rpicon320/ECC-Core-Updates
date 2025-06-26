@@ -431,6 +431,44 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
     return () => clearTimeout(autoSaveTimer)
   }, [state.hasUnsavedChanges, saveAssessment])
 
+  // Basic section progress calculation useEffect
+  useEffect(() => {
+    const basicData = state.data.sections.basic.data
+    let completedFields = 0
+    const totalRequiredFields = 4
+    
+    // Check required fields
+    if (basicData.clientId && typeof basicData.clientId === 'string' && basicData.clientId.trim() !== '') {
+      completedFields++
+    }
+    if (basicData.assessmentDate && typeof basicData.assessmentDate === 'string' && basicData.assessmentDate.trim() !== '') {
+      completedFields++
+    }
+    if (basicData.completionDate && typeof basicData.completionDate === 'string' && basicData.completionDate.trim() !== '') {
+      completedFields++
+    }
+    if (basicData.consultationReasons && Array.isArray(basicData.consultationReasons) && basicData.consultationReasons.length > 0) {
+      completedFields++
+    }
+    
+    const completionPercentage = Math.round((completedFields / totalRequiredFields) * 100)
+    const isComplete = completionPercentage === 100
+    
+    // Update the section if the completion percentage has changed
+    if (state.data.sections.basic.completionPercentage !== completionPercentage) {
+      dispatch({
+        type: 'UPDATE_SECTION',
+        payload: {
+          section: 'basic',
+          data: { 
+            completionPercentage,
+            isComplete
+          }
+        }
+      })
+    }
+  }, [state.data.sections.basic.data])
+
   // Action handlers
   const updateSection = useCallback((section: SectionKey, data: Partial<SectionData>) => {
     dispatch({ type: 'UPDATE_SECTION', payload: { section, data } })
@@ -511,17 +549,7 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
       }
     })
 
-    // Update completion percentage for basic section
-    if (section === 'basic') {
-      const completionPercentage = calculateBasicSectionProgress()
-      dispatch({
-        type: 'UPDATE_SECTION',
-        payload: {
-          section: 'basic',
-          data: { completionPercentage }
-        }
-      })
-    }
+
 
     return errors
   }, [state.data.sections, calculateBasicSectionProgress])
