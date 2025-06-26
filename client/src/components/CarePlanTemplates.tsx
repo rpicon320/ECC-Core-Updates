@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Save, X, Calendar, Target, AlertTriangle, Lightbulb, Upload, Download, FileText, Settings, FolderOpen } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-
-interface Recommendation {
-  id: string
-  text: string
-  priority: 'high' | 'medium' | 'low'
-}
-
-interface CarePlanTemplate {
-  id: string
-  category: string
-  concern: string
-  goal: string
-  barrier: string
-  targetDate?: string
-  isOngoing: boolean
-  recommendations: Recommendation[]
-  createdBy: string
-  createdAt: Date
-  lastModified: Date
-}
+import { 
+  getCarePlanTemplates, 
+  createCarePlanTemplate, 
+  updateCarePlanTemplate, 
+  deleteCarePlanTemplate, 
+  batchCreateCarePlanTemplates,
+  getCarePlanCategories,
+  saveCarePlanCategories,
+  CarePlanTemplate,
+  Recommendation
+} from '../lib/firestoreService'
 
 const categories = [
   'Medical Management',
@@ -179,10 +170,7 @@ export default function CarePlanTemplates() {
   const [editingValue, setEditingValue] = useState('')
   const [showConfirmTooltip, setShowConfirmTooltip] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadTemplates()
-    loadCategories()
-  }, [])
+  // Removed old localStorage loading - now handled by loadData() in the main useEffect
 
   useEffect(() => {
     if (formData.category) {
@@ -191,34 +179,30 @@ export default function CarePlanTemplates() {
     }
   }, [formData.category])
 
-  const loadTemplates = () => {
-    const saved = localStorage.getItem('carePlanTemplates')
-    if (saved) {
-      const parsed = JSON.parse(saved).map((t: any) => ({
-        ...t,
-        createdAt: new Date(t.createdAt),
-        lastModified: new Date(t.lastModified)
-      }))
-      setTemplates(parsed)
+  // Loading state
+  const [loading, setLoading] = useState(true)
+
+  // Load templates and categories from Firestore
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const [templatesData, categoriesData] = await Promise.all([
+        getCarePlanTemplates(),
+        getCarePlanCategories()
+      ])
+      setTemplates(templatesData)
+      setCategories(categoriesData)
+    } catch (error) {
+      console.error('Error loading care plan data:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const saveTemplates = (newTemplates: CarePlanTemplate[]) => {
-    localStorage.setItem('carePlanTemplates', JSON.stringify(newTemplates))
-    setTemplates(newTemplates)
-  }
-
-  const loadCategories = () => {
-    const saved = localStorage.getItem('carePlanCategories')
-    if (saved) {
-      setCategories(JSON.parse(saved))
-    }
-  }
-
-  const saveCategories = (newCategories: string[]) => {
-    localStorage.setItem('carePlanCategories', JSON.stringify(newCategories))
-    setCategories(newCategories)
-  }
+  // Initialize data on component mount
+  useEffect(() => {
+    loadData()
+  }, [])
 
   const resetForm = () => {
     setFormData({
@@ -284,41 +268,49 @@ export default function CarePlanTemplates() {
     }))
   }
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!formData.category || !formData.concern || !formData.goal || !formData.barrier) {
       alert('Please fill in all required fields')
       return
     }
 
-    const now = new Date()
-    const template: CarePlanTemplate = {
-      id: editingTemplate?.id || Date.now().toString(),
-      category: formData.category,
-      concern: formData.concern,
-      goal: formData.goal,
-      barrier: formData.barrier,
-      targetDate: formData.isOngoing ? undefined : formData.targetDate,
-      isOngoing: formData.isOngoing,
-      recommendations: formData.recommendations,
-      createdBy: (user as any)?.firstName && (user as any)?.lastName ? `${(user as any).firstName} ${(user as any).lastName}` : 'Unknown',
-      createdAt: editingTemplate?.createdAt || now,
-      lastModified: now
-    }
+    try {
+      const templateData = {
+        category: formData.category,
+        concern: formData.concern,
+        goal: formData.goal,
+        barrier: formData.barrier,
+        targetDate: formData.isOngoing ? undefined : formData.targetDate,
+        isOngoing: formData.isOngoing,
+        recommendations: formData.recommendations,
+        createdBy: (user as any)?.firstName && (user as any)?.lastName ? `${(user as any).firstName} ${(user as any).lastName}` : 'Unknown',
+        createdAt: editingTemplate?.createdAt || new Date(),
+        lastModified: new Date()
+      }
 
-    if (editingTemplate) {
-      const updated = templates.map(t => t.id === editingTemplate.id ? template : t)
-      saveTemplates(updated)
-    } else {
-      saveTemplates([...templates, template])
-    }
+      if (editingTemplate) {
+        await updateCarePlanTemplate(editingTemplate.id!, templateData)
+      } else {
+        await createCarePlanTemplate(templateData)
+      }
 
-    closeForm()
+      await loadData() // Reload data to get latest changes
+      closeForm()
+    } catch (error) {
+      console.error('Error saving template:', error)
+      alert('Error saving template. Please try again.')
+    }
   }
 
-  const deleteTemplate = (id: string) => {
+  const deleteTemplate = async (id: string) => {
     if (confirm('Are you sure you want to delete this care plan template?')) {
-      const filtered = templates.filter(t => t.id !== id)
-      saveTemplates(filtered)
+      try {
+        await deleteCarePlanTemplate(id)
+        await loadData() // Reload data to reflect changes
+      } catch (error) {
+        console.error('Error deleting template:', error)
+        alert('Error deleting template. Please try again.')
+      }
     }
   }
 
@@ -418,9 +410,9 @@ export default function CarePlanTemplates() {
         return
       }
 
-      // Add new templates to existing ones
-      const updatedTemplates = [...templates, ...newTemplates]
-      saveTemplates(updatedTemplates)
+      // Add new templates to Firestore
+      await batchCreateCarePlanTemplates(newTemplates)
+      await loadData() // Reload to get latest data
       setUploadProgress(100)
       
       setTimeout(() => {
@@ -437,12 +429,18 @@ export default function CarePlanTemplates() {
   }
 
   // Category management functions
-  const addCategory = () => {
+  const addCategory = async () => {
     if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
-      const updatedCategories = [...categories, newCategoryName.trim()].sort()
-      saveCategories(updatedCategories)
-      setNewCategoryName('')
-      setAddingNewCategory(false)
+      try {
+        const updatedCategories = [...categories, newCategoryName.trim()].sort()
+        await saveCarePlanCategories(updatedCategories)
+        setCategories(updatedCategories)
+        setNewCategoryName('')
+        setAddingNewCategory(false)
+      } catch (error) {
+        console.error('Error adding category:', error)
+        alert('Error adding category. Please try again.')
+      }
     }
   }
 
@@ -478,31 +476,49 @@ export default function CarePlanTemplates() {
     }
   }
 
-  const updateCategory = (oldName: string, newName: string) => {
-    const updatedCategories = categories.map(cat => cat === oldName ? newName.trim() : cat).sort()
-    saveCategories(updatedCategories)
-    
-    // Update any templates that use this category
-    const updatedTemplates = templates.map(template => 
-      template.category === oldName 
-        ? { ...template, category: newName.trim(), lastModified: new Date() }
-        : template
-    )
-    saveTemplates(updatedTemplates)
-    
-    setEditingCategory(null)
-    setEditingValue('')
-    setShowConfirmTooltip(null)
+  const updateCategory = async (oldName: string, newName: string) => {
+    try {
+      const updatedCategories = categories.map(cat => cat === oldName ? newName.trim() : cat).sort()
+      await saveCarePlanCategories(updatedCategories)
+      setCategories(updatedCategories)
+      
+      // Update any templates that use this category
+      const templatesWithOldCategory = templates.filter(template => template.category === oldName)
+      for (const template of templatesWithOldCategory) {
+        await updateCarePlanTemplate(template.id!, { 
+          category: newName.trim(),
+          lastModified: new Date()
+        })
+      }
+      
+      await loadData() // Reload to get latest data
+      setEditingCategory(null)
+      setEditingValue('')
+      setShowConfirmTooltip(null)
+    } catch (error) {
+      console.error('Error updating category:', error)
+      alert('Error updating category. Please try again.')
+    }
   }
 
-  const deleteCategory = (categoryName: string) => {
+  const deleteCategory = async (categoryName: string) => {
     if (confirm(`Are you sure you want to delete the category "${categoryName}"? This will also delete all templates in this category.`)) {
-      const updatedCategories = categories.filter(cat => cat !== categoryName)
-      saveCategories(updatedCategories)
-      
-      // Delete templates that use this category
-      const updatedTemplates = templates.filter(template => template.category !== categoryName)
-      saveTemplates(updatedTemplates)
+      try {
+        const updatedCategories = categories.filter(cat => cat !== categoryName)
+        await saveCarePlanCategories(updatedCategories)
+        setCategories(updatedCategories)
+        
+        // Delete templates that use this category
+        const templatesWithCategory = templates.filter(template => template.category === categoryName)
+        for (const template of templatesWithCategory) {
+          await deleteCarePlanTemplate(template.id!)
+        }
+        
+        await loadData() // Reload to get latest data
+      } catch (error) {
+        console.error('Error deleting category:', error)
+        alert('Error deleting category. Please try again.')
+      }
     }
   }
 
@@ -557,7 +573,12 @@ export default function CarePlanTemplates() {
 
         {/* Templates List */}
         <div className="p-6">
-          {templates.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading care plan templates...</p>
+            </div>
+          ) : templates.length === 0 ? (
             <div className="text-center py-12">
               <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No templates yet</h3>
@@ -589,7 +610,7 @@ export default function CarePlanTemplates() {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => deleteTemplate(template.id)}
+                        onClick={() => template.id && deleteTemplate(template.id)}
                         className="text-red-600 hover:bg-red-50 p-1 rounded"
                         title="Delete"
                       >

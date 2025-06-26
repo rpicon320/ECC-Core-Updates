@@ -30,7 +30,9 @@ const COLLECTIONS = {
   USERS: 'users',
   CLIENT_USERS: 'client_users',
   CLIENTS: 'clients',
-  ASSESSMENTS: 'assessments'
+  ASSESSMENTS: 'assessments',
+  CARE_PLAN_TEMPLATES: 'care_plan_templates',
+  CARE_PLAN_CATEGORIES: 'care_plan_categories'
 } as const
 
 // Generate unique ID (Firestore will auto-generate, but keeping for compatibility)
@@ -1077,5 +1079,200 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
     }
   } catch (error) {
     console.error('Failed to migrate from localStorage:', error)
+  }
+}
+
+// Care Plan Template Types
+export interface Recommendation {
+  id: string
+  text: string
+  priority: 'high' | 'medium' | 'low'
+}
+
+export interface CarePlanTemplate {
+  id?: string
+  category: string
+  concern: string
+  goal: string
+  barrier: string
+  targetDate?: string
+  isOngoing: boolean
+  recommendations: Recommendation[]
+  createdBy: string
+  createdAt: Date
+  lastModified: Date
+}
+
+// Care Plan Templates CRUD Operations
+export const getCarePlanTemplates = async (): Promise<CarePlanTemplate[]> => {
+  try {
+    const templatesRef = collection(db, COLLECTIONS.CARE_PLAN_TEMPLATES)
+    const q = query(templatesRef, orderBy('lastModified', 'desc'))
+    const querySnapshot = await getDocs(q)
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        lastModified: data.lastModified?.toDate() || new Date()
+      } as CarePlanTemplate
+    })
+  } catch (error) {
+    console.error('Error fetching care plan templates:', error)
+    return []
+  }
+}
+
+export const getCarePlanTemplateById = async (templateId: string): Promise<CarePlanTemplate | null> => {
+  try {
+    const templateRef = doc(db, COLLECTIONS.CARE_PLAN_TEMPLATES, templateId)
+    const templateDoc = await getDoc(templateRef)
+    
+    if (templateDoc.exists()) {
+      const data = templateDoc.data()
+      return {
+        id: templateDoc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        lastModified: data.lastModified?.toDate() || new Date()
+      } as CarePlanTemplate
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error fetching care plan template:', error)
+    return null
+  }
+}
+
+export const createCarePlanTemplate = async (templateData: Omit<CarePlanTemplate, 'id'>): Promise<CarePlanTemplate> => {
+  try {
+    const templatesRef = collection(db, COLLECTIONS.CARE_PLAN_TEMPLATES)
+    const preparedData = prepareForFirestore({
+      ...templateData,
+      createdAt: serverTimestamp(),
+      lastModified: serverTimestamp()
+    })
+    
+    const docRef = await addDoc(templatesRef, preparedData)
+    
+    return {
+      id: docRef.id,
+      ...templateData
+    } as CarePlanTemplate
+  } catch (error) {
+    console.error('Error creating care plan template:', error)
+    throw error
+  }
+}
+
+export const updateCarePlanTemplate = async (templateId: string, updates: Partial<CarePlanTemplate>): Promise<void> => {
+  try {
+    const templateRef = doc(db, COLLECTIONS.CARE_PLAN_TEMPLATES, templateId)
+    const preparedUpdates = prepareForFirestore({
+      ...updates,
+      lastModified: serverTimestamp()
+    })
+    
+    await updateDoc(templateRef, preparedUpdates)
+  } catch (error) {
+    console.error('Error updating care plan template:', error)
+    throw error
+  }
+}
+
+export const deleteCarePlanTemplate = async (templateId: string): Promise<void> => {
+  try {
+    const templateRef = doc(db, COLLECTIONS.CARE_PLAN_TEMPLATES, templateId)
+    await deleteDoc(templateRef)
+  } catch (error) {
+    console.error('Error deleting care plan template:', error)
+    throw error
+  }
+}
+
+export const batchCreateCarePlanTemplates = async (templates: Omit<CarePlanTemplate, 'id'>[]): Promise<void> => {
+  try {
+    const batch = writeBatch(db)
+    const templatesRef = collection(db, COLLECTIONS.CARE_PLAN_TEMPLATES)
+    
+    templates.forEach(templateData => {
+      const docRef = doc(templatesRef)
+      const preparedData = prepareForFirestore({
+        ...templateData,
+        createdAt: serverTimestamp(),
+        lastModified: serverTimestamp()
+      })
+      batch.set(docRef, preparedData)
+    })
+    
+    await batch.commit()
+  } catch (error) {
+    console.error('Error batch creating care plan templates:', error)
+    throw error
+  }
+}
+
+// Care Plan Categories CRUD Operations
+export const getCarePlanCategories = async (): Promise<string[]> => {
+  try {
+    const categoriesRef = collection(db, COLLECTIONS.CARE_PLAN_CATEGORIES)
+    const querySnapshot = await getDocs(categoriesRef)
+    
+    if (querySnapshot.empty) {
+      // Initialize with default categories if none exist
+      const defaultCategories = [
+        'Activities of daily living',
+        'Behavioral/Emotional',
+        'Care coordination',
+        'Cognitive',
+        'Daily habits and routines',
+        'Environmental safety',
+        'Family/Caregiver support',
+        'Financial',
+        'Legal',
+        'Medical/health status',
+        'Mobility and movement',
+        'Nutrition and hydration',
+        'Safety',
+        'Social engagement',
+        'Spirituality',
+        'Transportation'
+      ]
+      
+      await saveCarePlanCategories(defaultCategories)
+      return defaultCategories
+    }
+    
+    return querySnapshot.docs.map(doc => doc.data().name).sort()
+  } catch (error) {
+    console.error('Error fetching care plan categories:', error)
+    return []
+  }
+}
+
+export const saveCarePlanCategories = async (categories: string[]): Promise<void> => {
+  try {
+    const batch = writeBatch(db)
+    const categoriesRef = collection(db, COLLECTIONS.CARE_PLAN_CATEGORIES)
+    
+    // Clear existing categories
+    const existingSnapshot = await getDocs(categoriesRef)
+    existingSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref)
+    })
+    
+    // Add new categories
+    categories.forEach(category => {
+      const docRef = doc(categoriesRef)
+      batch.set(docRef, { name: category })
+    })
+    
+    await batch.commit()
+  } catch (error) {
+    console.error('Error saving care plan categories:', error)
+    throw error
   }
 }

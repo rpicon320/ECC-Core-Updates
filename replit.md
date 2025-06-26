@@ -152,3 +152,11 @@ This is a client management application with authentication, assessment modules,
 ✓ Fixed PreferredProducts component loading state variable error
   - Added missing loading state variable to prevent runtime errors
   - Component now properly handles loading states for better user experience
+✓ Migrated Care Plan Templates to Firestore database (January 2025)
+  - Added comprehensive Firestore CRUD operations for care plan templates
+  - Created new collections: care_plan_templates and care_plan_categories
+  - Replaced all localStorage operations with Firestore database calls
+  - Added loading states and error handling for database operations
+  - Real-time data synchronization with automatic refresh after changes
+  - Maintained all existing functionality: create, edit, delete, CSV import/export
+  - Categories now managed through Firestore with dynamic initialization
