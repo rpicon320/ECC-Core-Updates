@@ -278,7 +278,7 @@ export default function BasicInformationSection({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label htmlFor="assessmentDate" className="block text-sm font-medium text-gray-700 mb-1">
-              Assessment Date
+              Assessment Date *
             </label>
             <input
               type="date"
@@ -286,15 +286,22 @@ export default function BasicInformationSection({
               value={data.assessmentDate as string || new Date().toISOString().split('T')[0]}
               onChange={(e) => onUpdateField('assessmentDate', e.target.value)}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              required
+              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                getFieldError('assessmentDate') ? 'border-red-300' : 'border-gray-300'
+              } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              aria-describedby={getFieldError('assessmentDate') ? 'assessmentDate-error' : undefined}
             />
+            {getFieldError('assessmentDate') && (
+              <p id="assessmentDate-error" className="mt-1 text-sm text-red-600">
+                {getFieldError('assessmentDate')?.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="completionDate" className="block text-sm font-medium text-gray-700 mb-1">
-              Completion Date
+              Completion Date *
             </label>
             <input
               type="date"
@@ -302,18 +309,27 @@ export default function BasicInformationSection({
               value={data.completionDate as string || ''}
               onChange={(e) => onUpdateField('completionDate', e.target.value)}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              required
+              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                getFieldError('completionDate') ? 'border-red-300' : 'border-gray-300'
+              } ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              aria-describedby={getFieldError('completionDate') ? 'completionDate-error' : undefined}
             />
+            {getFieldError('completionDate') && (
+              <p id="completionDate-error" className="mt-1 text-sm text-red-600">
+                {getFieldError('completionDate')?.message}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Consultation Reasons */}
         <div>
           <fieldset>
-            <legend className="block text-sm font-medium text-gray-700 mb-3">
-              Reason(s) for Consultation (Select all that apply)
+            <legend className={`block text-sm font-medium mb-3 ${
+              getFieldError('consultationReasons') ? 'text-red-700' : 'text-gray-700'
+            }`}>
+              Reason(s) for Consultation (Select all that apply) *
             </legend>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {consultationReasons.map((reason) => (
@@ -332,6 +348,12 @@ export default function BasicInformationSection({
               ))}
             </div>
           </fieldset>
+          
+          {getFieldError('consultationReasons') && (
+            <p className="mt-2 text-sm text-red-600">
+              {getFieldError('consultationReasons')?.message}
+            </p>
+          )}
           
           {((data.consultationReasons as string[]) || []).includes('Other') && (
             <div className="mt-4">

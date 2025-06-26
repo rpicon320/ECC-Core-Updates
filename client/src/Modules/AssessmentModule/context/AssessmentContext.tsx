@@ -101,7 +101,7 @@ type AssessmentAction =
   | { type: 'UPDATE_CLIENT_ID'; payload: string }
 
 const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
-  basic: ['clientId', 'assessmentDate', 'consultationReasons'],
+  basic: ['clientId', 'assessmentDate', 'completionDate', 'consultationReasons'],
   medical: ['allergies', 'currentMedications', 'primaryCarePhysicianName'],
   health_symptoms: ['nutrition_status', 'pain_level', 'medication_adherence', 'sleep_quality'],
   functional: [
@@ -125,6 +125,7 @@ const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
   psychosocial: ['regular_support_providers', 'adequate_support', 'main_social_supports'],
   hobbies: ['enjoy_for_fun', 'current_hobbies', 'social_preference'],
   providers: [],
+  care_plan: [],
   services: ['services_requested', 'priority_level'],
   summary: ['additional_comments', 'assessment_completion_date']
 }
@@ -452,6 +453,35 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
     dispatch({ type: 'SET_CURRENT_SECTION', payload: section })
   }, [])
 
+  // Calculate progress percentage for basic section (Page 1)
+  const calculateBasicSectionProgress = useCallback((): number => {
+    const basicData = state.data.sections.basic.data
+    let completedFields = 0
+    const totalRequiredFields = 4 // clientId, assessmentDate, completionDate, consultationReasons
+    
+    // Check if client is selected
+    if (basicData.clientId && typeof basicData.clientId === 'string' && basicData.clientId.trim() !== '') {
+      completedFields++
+    }
+    
+    // Check if assessment date is filled
+    if (basicData.assessmentDate && typeof basicData.assessmentDate === 'string' && basicData.assessmentDate.trim() !== '') {
+      completedFields++
+    }
+    
+    // Check if completion date is filled
+    if (basicData.completionDate && typeof basicData.completionDate === 'string' && basicData.completionDate.trim() !== '') {
+      completedFields++
+    }
+    
+    // Check if at least one consultation reason is selected
+    if (basicData.consultationReasons && Array.isArray(basicData.consultationReasons) && basicData.consultationReasons.length > 0) {
+      completedFields++
+    }
+    
+    return Math.round((completedFields / totalRequiredFields) * 100)
+  }, [state.data.sections.basic.data])
+
   const validateSection = useCallback((section: SectionKey): ValidationError[] => {
     const requiredFields = REQUIRED_FIELDS[section] || []
     const sectionData = state.data.sections[section]
@@ -459,17 +489,42 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
 
     requiredFields.forEach(field => {
       const value = sectionData.data[field]
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
-        errors.push({
-          field,
-          message: `${field.replace(/_/g, ' ')} is required`,
-          severity: 'error'
-        })
+      
+      // Special validation for consultation reasons (must have at least one selected)
+      if (field === 'consultationReasons') {
+        if (!value || !Array.isArray(value) || value.length === 0) {
+          errors.push({
+            field,
+            message: 'At least one reason for consultation must be selected',
+            severity: 'error'
+          })
+        }
+      } else {
+        // Standard validation for other fields
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          errors.push({
+            field,
+            message: `${field.replace(/_/g, ' ')} is required`,
+            severity: 'error'
+          })
+        }
       }
     })
 
+    // Update completion percentage for basic section
+    if (section === 'basic') {
+      const completionPercentage = calculateBasicSectionProgress()
+      dispatch({
+        type: 'UPDATE_SECTION',
+        payload: {
+          section: 'basic',
+          data: { completionPercentage }
+        }
+      })
+    }
+
     return errors
-  }, [state.data.sections])
+  }, [state.data.sections, calculateBasicSectionProgress])
 
   const validateAll = useCallback((): Record<string, ValidationError[]> => {
     const allErrors: Record<string, ValidationError[]> = {}
@@ -519,7 +574,8 @@ export function AssessmentProvider({ children, assessmentId }: AssessmentProvide
     validateAll,
     exportData,
     resetForm,
-    setMode
+    setMode,
+    calculateBasicSectionProgress
   }
 
   return (

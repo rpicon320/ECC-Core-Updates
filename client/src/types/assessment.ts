@@ -85,5 +85,6 @@ export interface AssessmentContextType {
     exportData: (format: 'json' | 'pdf' | 'print') => void
     resetForm: () => void
     setMode: (mode: 'edit' | 'view' | 'print') => void
+    calculateBasicSectionProgress: () => number
   }
 }
