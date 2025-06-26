@@ -428,17 +428,26 @@ export default function CarePlanTemplates() {
   }
 
   const addRecommendation = () => {
+    console.log('Add recommendation clicked:', newRecommendation)
     if (newRecommendation.text.trim()) {
       const recommendation: Recommendation = {
         id: Date.now().toString(),
         text: newRecommendation.text.trim(),
         priority: newRecommendation.priority
       }
-      setFormData(prev => ({
-        ...prev,
-        recommendations: [...prev.recommendations, recommendation]
-      }))
+      console.log('Adding recommendation:', recommendation)
+      setFormData(prev => {
+        console.log('Previous formData:', prev)
+        const newData = {
+          ...prev,
+          recommendations: [...prev.recommendations, recommendation]
+        }
+        console.log('New formData:', newData)
+        return newData
+      })
       setNewRecommendation({ text: '', priority: 'medium' })
+    } else {
+      console.log('No text entered for recommendation')
     }
   }
 
@@ -1103,6 +1112,7 @@ export default function CarePlanTemplates() {
                       <option value="low">Low</option>
                     </select>
                     <button
+                      type="button"
                       onClick={addRecommendation}
                       className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex-shrink-0"
                     >
