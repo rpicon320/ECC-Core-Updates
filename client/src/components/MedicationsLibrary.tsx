@@ -1,0 +1,549 @@
+import React, { useState, useEffect } from 'react'
+import { Plus, Edit2, Trash2, Search, Sparkles } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import { 
+  getMedications, 
+  createMedication, 
+  updateMedication, 
+  deleteMedication,
+  generateMedicationDescription,
+  initializeMedicationsDatabase,
+  type Medication 
+} from '../lib/firestoreService'
+
+export default function MedicationsLibrary() {
+  const { user } = useAuth()
+  const [medications, setMedications] = useState<Medication[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [success, setSuccess] = useState('')
+  const [error, setError] = useState('')
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    doses: [''],
+    frequencies: [''],
+    usedFor: '',
+    potentialSideEffects: '',
+    description: ''
+  })
+
+  useEffect(() => {
+    loadMedications()
+  }, [])
+
+  const loadMedications = async () => {
+    try {
+      setLoading(true)
+      // Initialize database if needed
+      await initializeMedicationsDatabase()
+      const fetchedMedications = await getMedications()
+      setMedications(fetchedMedications)
+    } catch (error) {
+      console.error('Error loading medications:', error)
+      setError('Failed to load medications')
+      setTimeout(() => setError(''), 5000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      doses: [''],
+      frequencies: [''],
+      usedFor: '',
+      potentialSideEffects: '',
+      description: ''
+    })
+    setEditingMedication(null)
+    setShowForm(false)
+  }
+
+  const openForm = (medication?: Medication) => {
+    if (medication) {
+      setFormData({
+        name: medication.name,
+        doses: medication.doses.length > 0 ? medication.doses : [''],
+        frequencies: medication.frequencies.length > 0 ? medication.frequencies : [''],
+        usedFor: medication.usedFor || '',
+        potentialSideEffects: medication.potentialSideEffects || '',
+        description: medication.description || ''
+      })
+      setEditingMedication(medication)
+    } else {
+      resetForm()
+    }
+    setShowForm(true)
+  }
+
+  const handleDoseChange = (index: number, value: string) => {
+    const newDoses = [...formData.doses]
+    newDoses[index] = value
+    setFormData({ ...formData, doses: newDoses })
+  }
+
+  const addDose = () => {
+    setFormData({ ...formData, doses: [...formData.doses, ''] })
+  }
+
+  const removeDose = (index: number) => {
+    if (formData.doses.length > 1) {
+      const newDoses = formData.doses.filter((_, i) => i !== index)
+      setFormData({ ...formData, doses: newDoses })
+    }
+  }
+
+  const handleFrequencyChange = (index: number, value: string) => {
+    const newFrequencies = [...formData.frequencies]
+    newFrequencies[index] = value
+    setFormData({ ...formData, frequencies: newFrequencies })
+  }
+
+  const addFrequency = () => {
+    setFormData({ ...formData, frequencies: [...formData.frequencies, ''] })
+  }
+
+  const removeFrequency = (index: number) => {
+    if (formData.frequencies.length > 1) {
+      const newFrequencies = formData.frequencies.filter((_, i) => i !== index)
+      setFormData({ ...formData, frequencies: newFrequencies })
+    }
+  }
+
+  const handleAIGenerate = async () => {
+    if (!formData.name || !formData.usedFor) {
+      setError('Please provide medication name and usage before generating description')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    setIsGeneratingDescription(true)
+    try {
+      const result = await generateMedicationDescription({
+        name: formData.name,
+        usedFor: formData.usedFor,
+        doses: formData.doses.filter(d => d.trim()),
+        frequencies: formData.frequencies.filter(f => f.trim())
+      })
+
+      if (result.success) {
+        setFormData({ ...formData, description: result.description })
+        setSuccess('AI-generated description added successfully!')
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        setError(result.error || 'Failed to generate description')
+        setTimeout(() => setError(''), 8000)
+      }
+    } catch (error: any) {
+      console.error('Error generating medication description:', error)
+      setError(error?.message || 'Failed to generate description')
+      setTimeout(() => setError(''), 8000)
+    } finally {
+      setIsGeneratingDescription(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.name.trim()) {
+      setError('Medication name is required')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    const filteredDoses = formData.doses.filter(dose => dose.trim())
+    const filteredFrequencies = formData.frequencies.filter(freq => freq.trim())
+
+    if (filteredDoses.length === 0) {
+      setError('At least one dose is required')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    if (filteredFrequencies.length === 0) {
+      setError('At least one frequency is required')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    try {
+      const medicationData = {
+        name: formData.name.trim(),
+        doses: filteredDoses,
+        frequencies: filteredFrequencies,
+        usedFor: formData.usedFor.trim(),
+        potentialSideEffects: formData.potentialSideEffects.trim(),
+        description: formData.description.trim(),
+        isActive: true,
+        createdBy: user?.id || user?.email || 'unknown',
+        createdAt: new Date(),
+        lastModified: new Date()
+      }
+
+      if (editingMedication) {
+        await updateMedication(editingMedication.id!, medicationData)
+        setSuccess('Medication updated successfully!')
+      } else {
+        await createMedication(medicationData)
+        setSuccess('Medication created successfully!')
+      }
+
+      setTimeout(() => setSuccess(''), 5000)
+      resetForm()
+      await loadMedications()
+    } catch (error) {
+      console.error('Error saving medication:', error)
+      setError('Failed to save medication. Please try again.')
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const handleDelete = async (medication: Medication) => {
+    if (!confirm(`Are you sure you want to delete "${medication.name}"?`)) {
+      return
+    }
+
+    try {
+      await deleteMedication(medication.id!)
+      setSuccess('Medication deleted successfully!')
+      setTimeout(() => setSuccess(''), 5000)
+      await loadMedications()
+    } catch (error) {
+      console.error('Error deleting medication:', error)
+      setError('Failed to delete medication')
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const filteredMedications = medications.filter(medication =>
+    medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    medication.usedFor?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading medications...</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Medications Library</h2>
+        <button
+          onClick={() => openForm()}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add New Medication
+        </button>
+      </div>
+
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          {success}
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search medications by name or usage..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {/* Medications Table */}
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Doses
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Frequency
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Used For
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredMedications.map((medication) => (
+                <tr key={medication.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{medication.name}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900">
+                      {medication.doses.slice(0, 2).map((dose, index) => (
+                        <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">
+                          {dose}
+                        </span>
+                      ))}
+                      {medication.doses.length > 2 && (
+                        <span className="text-xs text-gray-500">+{medication.doses.length - 2} more</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900">
+                      {medication.frequencies.slice(0, 2).map((freq, index) => (
+                        <span key={index} className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1 mb-1">
+                          {freq}
+                        </span>
+                      ))}
+                      {medication.frequencies.length > 2 && (
+                        <span className="text-xs text-gray-500">+{medication.frequencies.length - 2} more</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900 max-w-xs truncate">
+                      {medication.usedFor}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => openForm(medication)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-3"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(medication)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredMedications.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-500">
+              {searchTerm ? 'No medications found matching your search.' : 'No medications in the library yet.'}
+            </div>
+            {!searchTerm && (
+              <button
+                onClick={() => openForm()}
+                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Add First Medication
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                {editingMedication ? 'Edit Medication' : 'Add New Medication'}
+              </h3>
+              <button
+                onClick={resetForm}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Medication Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter medication name"
+                  required
+                />
+              </div>
+
+              {/* Doses */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Available Doses *
+                </label>
+                {formData.doses.map((dose, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={dose}
+                      onChange={(e) => handleDoseChange(index, e.target.value)}
+                      className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., 5mg, 10mg, 25mg"
+                    />
+                    {formData.doses.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeDose(index)}
+                        className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addDose}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  + Add Another Dose
+                </button>
+              </div>
+
+              {/* Frequencies */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Frequency Options *
+                </label>
+                {formData.frequencies.map((frequency, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={frequency}
+                      onChange={(e) => handleFrequencyChange(index, e.target.value)}
+                      className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., Once daily, Twice daily, As needed"
+                    />
+                    {formData.frequencies.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeFrequency(index)}
+                        className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addFrequency}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  + Add Another Frequency
+                </button>
+              </div>
+
+              {/* Used For */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Used For
+                </label>
+                <textarea
+                  value={formData.usedFor}
+                  onChange={(e) => setFormData({ ...formData, usedFor: e.target.value })}
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="What conditions or symptoms is this medication used to treat?"
+                />
+              </div>
+
+              {/* Potential Side Effects */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Potential Side Effects
+                </label>
+                <textarea
+                  value={formData.potentialSideEffects}
+                  onChange={(e) => setFormData({ ...formData, potentialSideEffects: e.target.value })}
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="List common side effects or adverse reactions"
+                />
+              </div>
+
+              {/* Description with AI Generate */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAIGenerate}
+                    disabled={isGeneratingDescription || !formData.name || !formData.usedFor}
+                    className="flex items-center gap-1 px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 text-sm"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
+                  </button>
+                </div>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Professional description for care managers (optional)"
+                />
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end space-x-3 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {editingMedication ? 'Update Medication' : 'Create Medication'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -34,7 +34,8 @@ const COLLECTIONS = {
   CARE_PLAN_TEMPLATES: 'care_plan_templates',
   CARE_PLAN_CATEGORIES: 'care_plan_categories',
   MEDICAL_DIAGNOSES: 'medical_diagnoses',
-  MEDICAL_DIAGNOSIS_CATEGORIES: 'medical_diagnosis_categories'
+  MEDICAL_DIAGNOSIS_CATEGORIES: 'medical_diagnosis_categories',
+  MEDICATIONS: 'medications'
 } as const
 
 // Generate unique ID (Firestore will auto-generate, but keeping for compatibility)
@@ -1654,5 +1655,289 @@ export const initializeMedicalDiagnosisCategories = async (): Promise<void> => {
   } catch (error) {
     console.error('Error initializing medical diagnosis categories:', error)
     throw error
+  }
+}
+
+// ========== Medications Library ==========
+
+export interface Medication {
+  id?: string
+  name: string
+  doses: string[]
+  frequencies: string[]
+  usedFor?: string
+  potentialSideEffects?: string
+  description?: string
+  isActive: boolean
+  createdBy: string
+  createdAt: Date
+  lastModified: Date
+}
+
+export const getMedications = async (): Promise<Medication[]> => {
+  try {
+    const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
+    const q = query(medicationsRef, where('isActive', '==', true), orderBy('name'))
+    const querySnapshot = await getDocs(q)
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        name: data.name || '',
+        doses: data.doses || [],
+        frequencies: data.frequencies || [],
+        usedFor: data.usedFor || '',
+        potentialSideEffects: data.potentialSideEffects || '',
+        description: data.description || '',
+        isActive: data.isActive ?? true,
+        createdBy: data.createdBy || '',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        lastModified: data.lastModified?.toDate() || new Date()
+      } as Medication
+    })
+  } catch (error) {
+    console.error('Error fetching medications:', error)
+    return []
+  }
+}
+
+export const getMedicationById = async (medicationId: string): Promise<Medication | null> => {
+  try {
+    const medicationRef = doc(db, COLLECTIONS.MEDICATIONS, medicationId)
+    const medicationDoc = await getDoc(medicationRef)
+    
+    if (medicationDoc.exists()) {
+      const data = medicationDoc.data()
+      return {
+        id: medicationDoc.id,
+        name: data.name || '',
+        doses: data.doses || [],
+        frequencies: data.frequencies || [],
+        usedFor: data.usedFor || '',
+        potentialSideEffects: data.potentialSideEffects || '',
+        description: data.description || '',
+        isActive: data.isActive ?? true,
+        createdBy: data.createdBy || '',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        lastModified: data.lastModified?.toDate() || new Date()
+      } as Medication
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error fetching medication:', error)
+    return null
+  }
+}
+
+export const createMedication = async (medicationData: Omit<Medication, 'id'>): Promise<Medication> => {
+  try {
+    const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
+    const preparedData = prepareForFirestore({
+      ...medicationData,
+      createdAt: serverTimestamp(),
+      lastModified: serverTimestamp()
+    })
+    
+    const docRef = await addDoc(medicationsRef, preparedData)
+    
+    return {
+      id: docRef.id,
+      ...medicationData
+    } as Medication
+  } catch (error) {
+    console.error('Error creating medication:', error)
+    throw error
+  }
+}
+
+export const updateMedication = async (medicationId: string, updates: Partial<Medication>): Promise<void> => {
+  try {
+    const medicationRef = doc(db, COLLECTIONS.MEDICATIONS, medicationId)
+    
+    // Check if document exists first
+    const docSnap = await getDoc(medicationRef)
+    if (!docSnap.exists()) {
+      console.error('Medication document does not exist:', medicationId)
+      throw new Error('Medication not found')
+    }
+    
+    const preparedUpdates = prepareForFirestore({
+      ...updates,
+      lastModified: serverTimestamp()
+    })
+    
+    await updateDoc(medicationRef, preparedUpdates)
+  } catch (error) {
+    console.error('Error updating medication:', error)
+    throw error
+  }
+}
+
+export const deleteMedication = async (medicationId: string): Promise<void> => {
+  try {
+    const medicationRef = doc(db, COLLECTIONS.MEDICATIONS, medicationId)
+    
+    // Check if document exists before trying to delete
+    const docSnap = await getDoc(medicationRef)
+    if (!docSnap.exists()) {
+      console.warn('Medication document does not exist:', medicationId)
+      return // Don't throw error for non-existent docs
+    }
+    
+    // Soft delete by setting isActive to false
+    await updateDoc(medicationRef, {
+      isActive: false,
+      lastModified: serverTimestamp()
+    })
+  } catch (error) {
+    console.error('Error deleting medication:', medicationId, error)
+    throw error
+  }
+}
+
+export const batchCreateMedications = async (medications: Omit<Medication, 'id'>[]): Promise<void> => {
+  try {
+    const batch = writeBatch(db)
+    const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
+    
+    medications.forEach(medicationData => {
+      const docRef = doc(medicationsRef)
+      const preparedData = prepareForFirestore({
+        ...medicationData,
+        createdAt: serverTimestamp(),
+        lastModified: serverTimestamp()
+      })
+      batch.set(docRef, preparedData)
+    })
+    
+    await batch.commit()
+  } catch (error) {
+    console.error('Error batch creating medications:', error)
+    throw error
+  }
+}
+
+export const initializeSampleMedications = async (): Promise<void> => {
+  try {
+    const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
+    const existingMedications = await getDocs(medicationsRef)
+    
+    if (existingMedications.empty) {
+      const sampleMedications: Omit<Medication, 'id'>[] = [
+        {
+          name: 'Lisinopril',
+          doses: ['5mg', '10mg', '20mg'],
+          frequencies: ['Once daily', 'Twice daily'],
+          usedFor: 'High blood pressure, heart failure, and kidney protection in diabetes',
+          potentialSideEffects: 'Dry cough, dizziness, hyperkalemia, angioedema (rare)',
+          description: 'ACE inhibitor commonly used for cardiovascular protection and blood pressure management',
+          isActive: true,
+          createdBy: 'system',
+          createdAt: new Date(),
+          lastModified: new Date()
+        },
+        {
+          name: 'Metformin',
+          doses: ['500mg', '850mg', '1000mg'],
+          frequencies: ['Once daily', 'Twice daily', 'Three times daily'],
+          usedFor: 'Type 2 diabetes mellitus, prediabetes, PCOS',
+          potentialSideEffects: 'Gastrointestinal upset, lactic acidosis (rare), vitamin B12 deficiency',
+          description: 'First-line oral antidiabetic medication that improves insulin sensitivity',
+          isActive: true,
+          createdBy: 'system',
+          createdAt: new Date(),
+          lastModified: new Date()
+        },
+        {
+          name: 'Atorvastatin',
+          doses: ['10mg', '20mg', '40mg', '80mg'],
+          frequencies: ['Once daily (evening)'],
+          usedFor: 'High cholesterol, cardiovascular disease prevention',
+          potentialSideEffects: 'Muscle pain, liver enzyme elevation, memory issues (rare)',
+          description: 'HMG-CoA reductase inhibitor for cholesterol management and cardiovascular protection',
+          isActive: true,
+          createdBy: 'system',
+          createdAt: new Date(),
+          lastModified: new Date()
+        },
+        {
+          name: 'Levothyroxine',
+          doses: ['25mcg', '50mcg', '75mcg', '100mcg', '125mcg'],
+          frequencies: ['Once daily (morning, empty stomach)'],
+          usedFor: 'Hypothyroidism, thyroid hormone replacement',
+          potentialSideEffects: 'Hyperthyroid symptoms if overdosed, cardiac palpitations, insomnia',
+          description: 'Synthetic thyroid hormone replacement therapy for hypothyroidism',
+          isActive: true,
+          createdBy: 'system',
+          createdAt: new Date(),
+          lastModified: new Date()
+        },
+        {
+          name: 'Omeprazole',
+          doses: ['20mg', '40mg'],
+          frequencies: ['Once daily', 'Twice daily'],
+          usedFor: 'GERD, peptic ulcer disease, Zollinger-Ellison syndrome',
+          potentialSideEffects: 'Headache, diarrhea, increased infection risk with long-term use',
+          description: 'Proton pump inhibitor for acid suppression and gastric protection',
+          isActive: true,
+          createdBy: 'system',
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
+      ]
+      
+      await batchCreateMedications(sampleMedications)
+      console.log('Sample medications initialized')
+    }
+  } catch (error) {
+    console.error('Error initializing sample medications:', error)
+  }
+}
+
+export const initializeMedicationsDatabase = async (): Promise<void> => {
+  try {
+    console.log('Initializing Medications Database...')
+    await initializeSampleMedications()
+    console.log('Medications Database initialized successfully')
+  } catch (error) {
+    console.error('Error initializing medications database:', error)
+  }
+}
+
+export const generateMedicationDescription = async (medicationData: {
+  name: string
+  usedFor: string
+  doses?: string[]
+  frequencies?: string[]
+}): Promise<{ success: boolean; description?: string; error?: string }> => {
+  try {
+    const response = await fetch('/api/generate-medication-description', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(medicationData),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to generate description')
+    }
+
+    return { success: true, description: result.description }
+  } catch (error: any) {
+    console.error('Error generating medication description:', error)
+    
+    let errorMessage = 'Failed to generate description'
+    if (error.message.includes('quota') || error.message.includes('insufficient_quota')) {
+      errorMessage = 'OpenAI API quota exceeded. Please check your billing at platform.openai.com'
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    return { success: false, error: errorMessage }
   }
 }

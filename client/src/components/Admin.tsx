@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, Edit, Trash2, Shield, User, Key, Users, UserCheck, Link, RefreshCw, Copy, Eye, EyeOff, Mail, AlertTriangle, Target, Stethoscope } from 'lucide-react'
+import { Plus, Edit, Trash2, Shield, User, Key, Users, UserCheck, Link, RefreshCw, Copy, Eye, EyeOff, Mail, AlertTriangle, Target, Stethoscope, Pill } from 'lucide-react'
 import { User as UserType, ClientUser, Client } from '../lib/mockData'
 import { 
   getUsers, 
@@ -17,10 +17,11 @@ import {
 import { isValidStaffEmailDomain } from '../lib/emailService'
 import CarePlanTemplates from './CarePlanTemplates'
 import MedicalDiagnosisLibrary from './MedicalDiagnosisLibrary'
+import MedicationsLibrary from './MedicationsLibrary'
 
 export default function Admin() {
   const { profile } = useAuth()
-  const [activeTab, setActiveTab] = useState<'staff' | 'clients' | 'templates' | 'diagnoses'>('staff')
+  const [activeTab, setActiveTab] = useState<'staff' | 'clients' | 'templates' | 'diagnoses' | 'medications'>('staff')
   const [users, setUsers] = useState<UserType[]>([])
   const [clientUsers, setClientUsers] = useState<ClientUser[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -334,6 +335,17 @@ export default function Admin() {
                 <Stethoscope className="h-4 w-4 inline mr-2" />
                 Medical Diagnosis Library
               </button>
+              <button
+                onClick={() => setActiveTab('medications')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'medications'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Pill className="h-4 w-4 inline mr-2" />
+                Medications Library
+              </button>
             </nav>
           </div>
         </div>
@@ -355,6 +367,9 @@ export default function Admin() {
 
         {/* Medical Diagnosis Library Tab */}
         {activeTab === 'diagnoses' && <MedicalDiagnosisLibrary />}
+
+        {/* Medications Library Tab */}
+        {activeTab === 'medications' && <MedicationsLibrary />}
 
         {/* Staff Users Tab */}
         {activeTab === 'staff' && (
