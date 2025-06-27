@@ -261,6 +261,10 @@ export default function MedicalDiagnosisLibrary() {
         setSuccess('Diagnosis created successfully')
       }
 
+      // Reset form data
+      setFormData({ name: '', category: '', description: '' })
+      setSelectedDiagnosis(null)
+      
       // Reload diagnoses
       await loadDiagnoses()
       setShowForm(false)
@@ -604,7 +608,12 @@ export default function MedicalDiagnosisLibrary() {
                   {selectedDiagnosis ? 'Edit Diagnosis' : 'Add New Diagnosis'}
                 </h3>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false)
+                    setSelectedDiagnosis(null)
+                    setFormData({ name: '', category: '', description: '' })
+                    setError('')
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-5 w-5" />
@@ -663,7 +672,12 @@ export default function MedicalDiagnosisLibrary() {
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => {
+                      setShowForm(false)
+                      setSelectedDiagnosis(null)
+                      setFormData({ name: '', category: '', description: '' })
+                      setError('')
+                    }}
                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
                   >
                     Cancel
