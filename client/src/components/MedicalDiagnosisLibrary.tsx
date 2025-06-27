@@ -46,6 +46,7 @@ export default function MedicalDiagnosisLibrary() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -233,12 +234,19 @@ export default function MedicalDiagnosisLibrary() {
     }
   }
 
-  const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    setSelectedFile(file || null)
+  }
+
+  const handleCsvUpload = async () => {
+    if (!selectedFile) {
+      setError('Please select a CSV file first')
+      return
+    }
 
     try {
-      const text = await file.text()
+      const text = await selectedFile.text()
       const lines = text.split('\n').filter(line => line.trim())
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
       
@@ -281,6 +289,7 @@ export default function MedicalDiagnosisLibrary() {
       await loadDiagnoses() // Reload the list
       setSuccess(`Imported ${newDiagnoses.length} diagnoses successfully`)
       setShowCsvUpload(false)
+      setSelectedFile(null)
     } catch (err) {
       setError('Failed to import CSV file')
       console.error('Error importing CSV:', err)
@@ -795,7 +804,11 @@ export default function MedicalDiagnosisLibrary() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Import CSV File</h3>
                 <button
-                  onClick={() => setShowCsvUpload(false)}
+                  onClick={() => {
+                    setShowCsvUpload(false)
+                    setSelectedFile(null)
+                    setError('')
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-5 w-5" />
@@ -816,16 +829,33 @@ export default function MedicalDiagnosisLibrary() {
               <input
                 type="file"
                 accept=".csv"
-                onChange={handleCsvUpload}
+                onChange={handleFileSelect}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
+              
+              {selectedFile && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Selected: {selectedFile.name}
+                </p>
+              )}
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowCsvUpload(false)}
+                  onClick={() => {
+                    setShowCsvUpload(false)
+                    setSelectedFile(null)
+                    setError('')
+                  }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
                 >
                   Cancel
+                </button>
+                <button
+                  onClick={handleCsvUpload}
+                  disabled={!selectedFile}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Upload
                 </button>
               </div>
             </div>
