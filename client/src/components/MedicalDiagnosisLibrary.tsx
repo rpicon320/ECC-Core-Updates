@@ -8,7 +8,8 @@ import {
   updateMedicalDiagnosis,
   deleteMedicalDiagnosis,
   batchCreateMedicalDiagnoses,
-  initializeSampleMedicalDiagnoses
+  initializeSampleMedicalDiagnoses,
+  getMedicalDiagnosisCategories
 } from '../lib/firestoreService'
 
 
@@ -40,6 +41,8 @@ export default function MedicalDiagnosisLibrary() {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<MedicalDiagnosis | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [showCsvUpload, setShowCsvUpload] = useState(false)
+  const [showCategoryForm, setShowCategoryForm] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -85,6 +88,31 @@ export default function MedicalDiagnosisLibrary() {
       })
     }
     setShowForm(true)
+  }
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setError('Category name is required')
+      return
+    }
+
+    if (categories.includes(newCategoryName.trim())) {
+      setError('Category already exists')
+      return
+    }
+
+    try {
+      // Add new category to the local array
+      const updatedCategories = [...categories, newCategoryName.trim()].sort()
+      setCategories(updatedCategories)
+      setNewCategoryName('')
+      setShowCategoryForm(false)
+      setSuccess(`Category "${newCategoryName.trim()}" created successfully. Create a diagnosis with this category to save it permanently.`)
+      setTimeout(() => setSuccess(''), 5000)
+    } catch (err) {
+      setError('Failed to create category')
+      console.error('Error creating category:', err)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -243,18 +271,18 @@ export default function MedicalDiagnosisLibrary() {
         </div>
         <div className="flex space-x-2">
           <button
+            onClick={() => setShowCategoryForm(true)}
+            className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Category
+          </button>
+          <button
             onClick={() => setShowCsvUpload(true)}
             className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
           >
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
-          </button>
-          <button
-            onClick={exportToCsv}
-            className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
           </button>
           <button
             onClick={() => openForm()}
@@ -519,6 +547,66 @@ export default function MedicalDiagnosisLibrary() {
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Category Modal */}
+      {showCategoryForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Create New Category</h3>
+                <button
+                  onClick={() => {
+                    setShowCategoryForm(false)
+                    setNewCategoryName('')
+                    setError('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter category name"
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCategoryForm(false)
+                      setNewCategoryName('')
+                      setError('')
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    Create Category
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
