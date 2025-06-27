@@ -188,3 +188,7 @@ This is a client management application with authentication, assessment modules,
   - Enhanced error handling for database connectivity issues
   - CSV upload functionality now properly saves to Firestore database
   - Medical Diagnosis Library fully operational with real database storage
+  - Simplified Medical Diagnosis form to only require Name and Category fields
+  - Description field kept as optional for additional details when needed
+  - Removed diagnostic codes completely per user preference
+  - Clean, streamlined interface focused on essential medical diagnosis information
