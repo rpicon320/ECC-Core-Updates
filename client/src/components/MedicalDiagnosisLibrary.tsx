@@ -228,9 +228,10 @@ export default function MedicalDiagnosisLibrary() {
       if (result.success) {
         setFormData(prev => ({ ...prev, description: result.description }))
         setSuccess('AI description generated successfully!')
-        setTimeout(() => setSuccess(''), 3000)
+        setTimeout(() => setSuccess(''), 5000)
       } else {
         setError(result.error || 'Failed to generate description')
+        setTimeout(() => setError(''), 8000) // Clear error after 8 seconds
       }
     } catch (error) {
       console.error('Error generating description:', error)

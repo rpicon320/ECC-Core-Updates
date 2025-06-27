@@ -59,18 +59,24 @@ Provide only the description text, no additional formatting or explanations.`;
       success: true
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating diagnosis description:', error);
     
     let errorMessage = "Failed to generate description";
-    if (error instanceof Error) {
-      if (error.message.includes("API key")) {
-        errorMessage = "OpenAI API key is invalid or missing";
-      } else if (error.message.includes("quota")) {
-        errorMessage = "OpenAI API quota exceeded";
+    
+    // Handle specific OpenAI API errors
+    if (error?.status === 401) {
+      errorMessage = "OpenAI API key is invalid or missing";
+    } else if (error?.status === 429) {
+      if (error?.error?.code === 'insufficient_quota') {
+        errorMessage = "OpenAI API quota exceeded. Please check your billing at platform.openai.com";
       } else {
-        errorMessage = error.message;
+        errorMessage = "Rate limit exceeded. Please try again in a moment";
       }
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
     }
     
     return {
