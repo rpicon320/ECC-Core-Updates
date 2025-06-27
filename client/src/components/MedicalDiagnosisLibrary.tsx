@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Upload, Download, Search, X, Check, AlertTriangle, Package, Tag } from 'lucide-react'
+import { Plus, Edit, Trash2, Upload, Download, Search, X, Check, AlertTriangle, Package, Tag, CheckCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   MedicalDiagnosis,
@@ -47,6 +47,7 @@ export default function MedicalDiagnosisLibrary() {
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -239,6 +240,35 @@ export default function MedicalDiagnosisLibrary() {
     setSelectedFile(file || null)
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      const file = files[0]
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        setSelectedFile(file)
+        setError('')
+      } else {
+        setError('Please select a CSV file')
+      }
+    }
+  }
+
   const handleCsvUpload = async () => {
     if (!selectedFile) {
       setError('Please select a CSV file first')
@@ -290,6 +320,7 @@ export default function MedicalDiagnosisLibrary() {
       setSuccess(`Imported ${newDiagnoses.length} diagnoses successfully`)
       setShowCsvUpload(false)
       setSelectedFile(null)
+      setIsDragOver(false)
     } catch (err) {
       setError('Failed to import CSV file')
       console.error('Error importing CSV:', err)
@@ -807,6 +838,7 @@ export default function MedicalDiagnosisLibrary() {
                   onClick={() => {
                     setShowCsvUpload(false)
                     setSelectedFile(null)
+                    setIsDragOver(false)
                     setError('')
                   }}
                   className="text-gray-400 hover:text-gray-600"
@@ -826,24 +858,69 @@ export default function MedicalDiagnosisLibrary() {
                 </ul>
               </div>
 
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              />
-              
-              {selectedFile && (
-                <p className="text-sm text-gray-600 mt-2">
-                  Selected: {selectedFile.name}
-                </p>
-              )}
+              {/* Drag and Drop Zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`
+                  relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
+                  ${isDragOver 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : selectedFile 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}
+              >
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                
+                <div className="flex flex-col items-center">
+                  {selectedFile ? (
+                    <>
+                      <CheckCircle className="h-12 w-12 text-green-500 mb-3" />
+                      <p className="text-sm font-medium text-green-700 mb-1">
+                        File Selected
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Click here or drag another file to replace
+                      </p>
+                    </>
+                  ) : isDragOver ? (
+                    <>
+                      <Upload className="h-12 w-12 text-blue-500 mb-3" />
+                      <p className="text-sm font-medium text-blue-700">
+                        Release to upload CSV file
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-12 w-12 text-gray-400 mb-3" />
+                      <p className="text-sm font-medium text-gray-700 mb-1">
+                        Drag and drop your CSV file here
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        or click to browse files
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => {
                     setShowCsvUpload(false)
                     setSelectedFile(null)
+                    setIsDragOver(false)
                     setError('')
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
