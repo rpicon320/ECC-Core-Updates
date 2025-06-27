@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Upload, Download, Search, X, Check, AlertTriangle, Package, Tag, CheckCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Upload, Download, Search, X, Check, AlertTriangle, Package, Tag, CheckCircle, Sparkles } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   MedicalDiagnosis,
@@ -12,6 +12,7 @@ import {
   getMedicalDiagnosisCategories,
   initializeMedicalDiagnosisDatabase
 } from '../lib/firestoreService'
+import { generateDiagnosisDescription } from '../lib/openaiService'
 
 
 
@@ -47,6 +48,7 @@ export default function MedicalDiagnosisLibrary() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
 
@@ -205,6 +207,36 @@ export default function MedicalDiagnosisLibrary() {
     } catch (err) {
       setError('Failed to update category')
       console.error('Error updating category:', err)
+    }
+  }
+
+  const handleGenerateDescription = async () => {
+    if (!formData.name.trim() || !formData.category) {
+      setError('Please enter a diagnosis name and select a category first')
+      return
+    }
+
+    setIsGeneratingDescription(true)
+    setError('')
+
+    try {
+      const result = await generateDiagnosisDescription({
+        name: formData.name.trim(),
+        category: formData.category
+      })
+
+      if (result.success) {
+        setFormData(prev => ({ ...prev, description: result.description }))
+        setSuccess('AI description generated successfully!')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError(result.error || 'Failed to generate description')
+      }
+    } catch (error) {
+      console.error('Error generating description:', error)
+      setError('Failed to generate description. Please try again.')
+    } finally {
+      setIsGeneratingDescription(false)
     }
   }
 
@@ -655,16 +687,34 @@ export default function MedicalDiagnosisLibrary() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateDescription}
+                      disabled={!formData.name.trim() || !formData.category || isGeneratingDescription}
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Generate AI description"
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
+                    </button>
+                  </div>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     rows={3}
-                    placeholder="Brief description of the diagnosis"
+                    placeholder="Brief description of the diagnosis (or use AI Generate button)"
                   />
+                  {isGeneratingDescription && (
+                    <div className="mt-1 text-xs text-purple-600 flex items-center">
+                      <div className="inline-block animate-spin rounded-full h-3 w-3 border-b border-purple-600 mr-1"></div>
+                      Generating AI description...
+                    </div>
+                  )}
                 </div>
 
 
