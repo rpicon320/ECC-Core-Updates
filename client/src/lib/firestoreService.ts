@@ -32,7 +32,9 @@ const COLLECTIONS = {
   CLIENTS: 'clients',
   ASSESSMENTS: 'assessments',
   CARE_PLAN_TEMPLATES: 'care_plan_templates',
-  CARE_PLAN_CATEGORIES: 'care_plan_categories'
+  CARE_PLAN_CATEGORIES: 'care_plan_categories',
+  MEDICAL_DIAGNOSES: 'medical_diagnoses',
+  MEDICAL_DIAGNOSIS_CATEGORIES: 'medical_diagnosis_categories'
 } as const
 
 // Generate unique ID (Firestore will auto-generate, but keeping for compatibility)
@@ -1349,7 +1351,7 @@ export interface MedicalDiagnosis {
 
 export const getMedicalDiagnoses = async (): Promise<MedicalDiagnosis[]> => {
   try {
-    const diagnosesRef = collection(db, 'medical_diagnoses')
+    const diagnosesRef = collection(db, COLLECTIONS.MEDICAL_DIAGNOSES)
     const q = query(diagnosesRef, where('isActive', '==', true), orderBy('category'), orderBy('name'))
     const querySnapshot = await getDocs(q)
     
@@ -1377,7 +1379,7 @@ export const getMedicalDiagnoses = async (): Promise<MedicalDiagnosis[]> => {
 
 export const getMedicalDiagnosisById = async (diagnosisId: string): Promise<MedicalDiagnosis | null> => {
   try {
-    const docRef = doc(db, 'medical_diagnoses', diagnosisId)
+    const docRef = doc(db, COLLECTIONS.MEDICAL_DIAGNOSES, diagnosisId)
     const docSnapshot = await getDoc(docRef)
     
     if (!docSnapshot.exists()) {
@@ -1406,7 +1408,7 @@ export const getMedicalDiagnosisById = async (diagnosisId: string): Promise<Medi
 
 export const createMedicalDiagnosis = async (diagnosisData: Omit<MedicalDiagnosis, 'id'>): Promise<MedicalDiagnosis> => {
   try {
-    const diagnosesRef = collection(db, 'medical_diagnoses')
+    const diagnosesRef = collection(db, COLLECTIONS.MEDICAL_DIAGNOSES)
     const docRef = await addDoc(diagnosesRef, {
       ...diagnosisData,
       createdAt: Timestamp.now(),
@@ -1427,7 +1429,7 @@ export const createMedicalDiagnosis = async (diagnosisData: Omit<MedicalDiagnosi
 
 export const updateMedicalDiagnosis = async (diagnosisId: string, updates: Partial<MedicalDiagnosis>): Promise<void> => {
   try {
-    const docRef = doc(db, 'medical_diagnoses', diagnosisId)
+    const docRef = doc(db, COLLECTIONS.MEDICAL_DIAGNOSES, diagnosisId)
     const updateData = {
       ...updates,
       lastModified: Timestamp.now()
@@ -1444,7 +1446,7 @@ export const updateMedicalDiagnosis = async (diagnosisId: string, updates: Parti
 
 export const deleteMedicalDiagnosis = async (diagnosisId: string): Promise<void> => {
   try {
-    const docRef = doc(db, 'medical_diagnoses', diagnosisId)
+    const docRef = doc(db, COLLECTIONS.MEDICAL_DIAGNOSES, diagnosisId)
     await updateDoc(docRef, {
       isActive: false,
       lastModified: Timestamp.now()
@@ -1586,6 +1588,69 @@ export const initializeSampleMedicalDiagnoses = async (): Promise<void> => {
     console.log('Sample medical diagnoses initialized')
   } catch (error) {
     console.error('Error initializing sample medical diagnoses:', error)
+    throw error
+  }
+}
+
+// Initialize Medical Diagnosis Database Collections
+export const initializeMedicalDiagnosisDatabase = async (): Promise<void> => {
+  try {
+    console.log('Initializing Medical Diagnosis Database...')
+    
+    // Initialize categories first
+    await initializeMedicalDiagnosisCategories()
+    
+    // Initialize sample data if collections are empty
+    await initializeSampleMedicalDiagnoses()
+    
+    console.log('Medical Diagnosis Database initialized successfully')
+  } catch (error) {
+    console.error('Error initializing Medical Diagnosis Database:', error)
+    throw error
+  }
+}
+
+// Initialize Medical Diagnosis Categories
+export const initializeMedicalDiagnosisCategories = async (): Promise<void> => {
+  try {
+    const categoriesRef = collection(db, COLLECTIONS.MEDICAL_DIAGNOSIS_CATEGORIES)
+    const querySnapshot = await getDocs(categoriesRef)
+    
+    if (querySnapshot.empty) {
+      const defaultCategories = [
+        'Cardiovascular',
+        'Respiratory', 
+        'Neurological',
+        'Endocrine',
+        'Gastrointestinal',
+        'Musculoskeletal',
+        'Mental Health',
+        'Infectious Diseases',
+        'Oncology',
+        'Dermatological',
+        'Genitourinary',
+        'Hematological',
+        'Ophthalmological',
+        'ENT (Ear, Nose, Throat)',
+        'Other'
+      ]
+      
+      const batch = writeBatch(db)
+      defaultCategories.forEach(category => {
+        const docRef = doc(categoriesRef)
+        batch.set(docRef, {
+          name: category,
+          isActive: true,
+          createdAt: Timestamp.now(),
+          lastModified: Timestamp.now()
+        })
+      })
+      
+      await batch.commit()
+      console.log('Medical diagnosis categories initialized')
+    }
+  } catch (error) {
+    console.error('Error initializing medical diagnosis categories:', error)
     throw error
   }
 }

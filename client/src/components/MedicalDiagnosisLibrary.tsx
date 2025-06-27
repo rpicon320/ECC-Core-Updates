@@ -9,7 +9,8 @@ import {
   deleteMedicalDiagnosis,
   batchCreateMedicalDiagnoses,
   initializeSampleMedicalDiagnoses,
-  getMedicalDiagnosisCategories
+  getMedicalDiagnosisCategories,
+  initializeMedicalDiagnosisDatabase
 } from '../lib/firestoreService'
 
 
@@ -56,8 +57,26 @@ export default function MedicalDiagnosisLibrary() {
   })
 
   useEffect(() => {
-    loadDiagnoses()
+    initializeAndLoadDiagnoses()
   }, [])
+
+  const initializeAndLoadDiagnoses = async () => {
+    try {
+      setLoading(true)
+      console.log('Initializing Medical Diagnosis Database...')
+      
+      // Initialize the database first
+      await initializeMedicalDiagnosisDatabase()
+      
+      // Then load the data
+      await loadDiagnoses()
+    } catch (error) {
+      console.error('Error initializing database:', error)
+      setError('Database initialization failed. Please check Firestore configuration.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const loadDiagnoses = async () => {
     try {
@@ -68,7 +87,7 @@ export default function MedicalDiagnosisLibrary() {
       setDiagnoses(diagnosesData)
       
       // Extract categories from loaded diagnoses
-      const extractedCategories = [...new Set(diagnosesData.map(d => d.category))].sort()
+      const extractedCategories = Array.from(new Set(diagnosesData.map(d => d.category))).sort()
       setCategories(extractedCategories.length > 0 ? extractedCategories : [
         'Cardiovascular', 'Endocrine & Metabolic', 'Respiratory', 
         'Neurological & Mental Health', 'Musculoskeletal', 'Other'
@@ -83,7 +102,7 @@ export default function MedicalDiagnosisLibrary() {
         setDiagnoses(newDiagnosesData)
         
         // Update categories after initialization
-        const newCategories = [...new Set(newDiagnosesData.map(d => d.category))].sort()
+        const newCategories = Array.from(new Set(newDiagnosesData.map(d => d.category))).sort()
         setCategories(newCategories)
       }
     } catch (err) {
