@@ -210,6 +210,59 @@ export default function MedicalDiagnosisLibrary() {
     }
   }
 
+  const handleBulkGenerateDescriptions = async () => {
+    setIsGeneratingDescription(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const diagnosesWithoutDescriptions = diagnoses.filter(d => !d.description || d.description.trim() === '')
+      
+      if (diagnosesWithoutDescriptions.length === 0) {
+        setSuccess('All diagnoses already have descriptions!')
+        setTimeout(() => setSuccess(''), 3000)
+        return
+      }
+
+      setSuccess(`Generating descriptions for ${diagnosesWithoutDescriptions.length} diagnoses...`)
+      let completed = 0
+
+      for (const diagnosis of diagnosesWithoutDescriptions) {
+        try {
+          const result = await generateDiagnosisDescription({
+            name: diagnosis.name,
+            category: diagnosis.category
+          })
+
+          if (result.success) {
+            await updateMedicalDiagnosis(diagnosis.id!, { description: result.description })
+            completed++
+            setSuccess(`Generated ${completed}/${diagnosesWithoutDescriptions.length} descriptions...`)
+          } else {
+            console.error(`Failed to generate description for ${diagnosis.name}:`, result.error)
+          }
+
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500))
+        } catch (error) {
+          console.error(`Error generating description for ${diagnosis.name}:`, error)
+        }
+      }
+
+      setSuccess(`Successfully generated descriptions for ${completed} diagnoses!`)
+      setTimeout(() => setSuccess(''), 5000)
+      
+      // Reload diagnoses to show the new descriptions
+      await loadDiagnoses()
+    } catch (error) {
+      console.error('Error in bulk generation:', error)
+      setError('Failed to generate descriptions. Please try again.')
+      setTimeout(() => setError(''), 8000)
+    } finally {
+      setIsGeneratingDescription(false)
+    }
+  }
+
   const handleGenerateDescription = async () => {
     if (!formData.name.trim() || !formData.category) {
       setError('Please enter a diagnosis name and select a category first')
@@ -478,6 +531,14 @@ export default function MedicalDiagnosisLibrary() {
           </p>
         </div>
         <div className="flex space-x-2">
+          <button
+            onClick={handleBulkGenerateDescriptions}
+            disabled={isGeneratingDescription}
+            className="flex items-center px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isGeneratingDescription ? 'Generating...' : 'AI Generate All'}
+          </button>
           <button
             onClick={() => setShowCategoryManager(true)}
             className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
