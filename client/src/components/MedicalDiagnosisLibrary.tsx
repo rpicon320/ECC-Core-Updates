@@ -62,15 +62,44 @@ export default function MedicalDiagnosisLibrary() {
   const loadDiagnoses = async () => {
     try {
       setLoading(true)
-      // Initialize sample data if needed
-      await initializeSampleMedicalDiagnoses()
       
-      // Load diagnoses from Firestore
+      // Try to load diagnoses from Firestore
       const diagnosesData = await getMedicalDiagnoses()
       setDiagnoses(diagnosesData)
+      
+      // Extract categories from loaded diagnoses
+      const extractedCategories = [...new Set(diagnosesData.map(d => d.category))].sort()
+      setCategories(extractedCategories.length > 0 ? extractedCategories : [
+        'Cardiovascular', 'Endocrine & Metabolic', 'Respiratory', 
+        'Neurological & Mental Health', 'Musculoskeletal', 'Other'
+      ])
+      
+      // If we have no data, try to initialize sample data
+      if (diagnosesData.length === 0) {
+        console.log('No diagnoses found, initializing sample data...')
+        await initializeSampleMedicalDiagnoses()
+        // Reload after initialization
+        const newDiagnosesData = await getMedicalDiagnoses()
+        setDiagnoses(newDiagnosesData)
+        
+        // Update categories after initialization
+        const newCategories = [...new Set(newDiagnosesData.map(d => d.category))].sort()
+        setCategories(newCategories)
+      }
     } catch (err) {
-      setError('Failed to load diagnoses')
       console.error('Error loading diagnoses:', err)
+      // Show specific error message about Firestore configuration
+      if (err instanceof Error && err.message.includes('failed-precondition')) {
+        setError('Firestore database not configured. Please contact administrator to set up the database.')
+      } else {
+        setError(`Failed to load diagnoses: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      }
+      
+      // Set default categories even if loading fails
+      setCategories([
+        'Cardiovascular', 'Endocrine & Metabolic', 'Respiratory', 
+        'Neurological & Mental Health', 'Musculoskeletal', 'Other'
+      ])
     } finally {
       setLoading(false)
     }
