@@ -238,8 +238,13 @@ export default function MedicalDiagnosisLibrary() {
     }
 
     try {
+      // Generate a simple code if not provided
+      const generateCode = (name: string) => {
+        return name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || 'CUSTOM'
+      }
+
       const diagnosisData: Omit<MedicalDiagnosis, 'id'> = {
-        code: '',
+        code: selectedDiagnosis?.code || generateCode(formData.name),
         name: formData.name.trim(),  
         category: formData.category,
         description: formData.description.trim(),

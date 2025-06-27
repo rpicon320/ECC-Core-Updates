@@ -1352,25 +1352,27 @@ export interface MedicalDiagnosis {
 export const getMedicalDiagnoses = async (): Promise<MedicalDiagnosis[]> => {
   try {
     const diagnosesRef = collection(db, COLLECTIONS.MEDICAL_DIAGNOSES)
-    const q = query(diagnosesRef, where('isActive', '==', true), orderBy('category'), orderBy('name'))
-    const querySnapshot = await getDocs(q)
+    const querySnapshot = await getDocs(diagnosesRef)
     
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data()
-      return {
-        id: doc.id,
-        code: data.code || '',
-        name: data.name || '',
-        category: data.category || '',
-        description: data.description || '',
-        commonSymptoms: data.commonSymptoms || [],
-        riskFactors: data.riskFactors || [],
-        isActive: data.isActive ?? true,
-        createdBy: data.createdBy || '',
-        createdAt: data.createdAt?.toDate() || new Date(),
-        lastModified: data.lastModified?.toDate() || new Date()
-      }
-    })
+    return querySnapshot.docs
+      .map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          code: data.code || '',
+          name: data.name || '',
+          category: data.category || '',
+          description: data.description || '',
+          commonSymptoms: data.commonSymptoms || [],
+          riskFactors: data.riskFactors || [],
+          isActive: data.isActive ?? true,
+          createdBy: data.createdBy || '',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          lastModified: data.lastModified?.toDate() || new Date()
+        }
+      })
+      .filter(diagnosis => diagnosis.isActive)
+      .sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
     console.error('Error fetching medical diagnoses:', error)
     throw error
