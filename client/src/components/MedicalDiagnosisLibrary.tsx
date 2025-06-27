@@ -240,6 +240,11 @@ export default function MedicalDiagnosisLibrary() {
             setSuccess(`Generated ${completed}/${diagnosesWithoutDescriptions.length} descriptions...`)
           } else {
             console.error(`Failed to generate description for ${diagnosis.name}:`, result.error)
+            // If quota exceeded, stop the process
+            if (result.error?.includes('quota exceeded')) {
+              setError(`Generated ${completed} descriptions before reaching API quota limit. ${diagnosesWithoutDescriptions.length - completed} remaining.`)
+              break
+            }
           }
 
           // Small delay to avoid rate limiting
@@ -249,8 +254,12 @@ export default function MedicalDiagnosisLibrary() {
         }
       }
 
-      setSuccess(`Successfully generated descriptions for ${completed} diagnoses!`)
-      setTimeout(() => setSuccess(''), 5000)
+      if (completed === diagnosesWithoutDescriptions.length) {
+        setSuccess(`Successfully generated descriptions for all ${completed} diagnoses!`)
+      } else {
+        setSuccess(`Successfully generated descriptions for ${completed} of ${diagnosesWithoutDescriptions.length} diagnoses. ${diagnosesWithoutDescriptions.length - completed} remaining due to API quota limits.`)
+      }
+      setTimeout(() => setSuccess(''), 8000)
       
       // Reload diagnoses to show the new descriptions
       await loadDiagnoses()
