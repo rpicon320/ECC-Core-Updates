@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Plus, Edit2, Trash2, Search, Sparkles, Upload, Download } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Sparkles, Upload, Download, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   getMedications, 
@@ -704,174 +704,218 @@ export default function MedicationsLibrary() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">
-                {editingMedication ? 'Edit Medication' : 'Add New Medication'}
-              </h3>
-              <button
-                onClick={resetForm}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Plus className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {editingMedication ? 'Edit Medication' : 'Add New Medication'}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {editingMedication ? 'Update medication information' : 'Add a new medication to the library'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={resetForm}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
+            
+            <div className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Medication Name *
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-900">
+                  Medication Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter medication name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Enter medication name (e.g., Lisinopril, Metformin)"
                   required
                 />
+                <p className="text-xs text-gray-500">Enter the generic or brand name of the medication</p>
               </div>
 
               {/* Doses */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Available Doses *
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-900">
+                  Available Doses <span className="text-red-500">*</span>
                 </label>
-                {formData.doses.map((dose, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={dose}
-                      onChange={(e) => handleDoseChange(index, e.target.value)}
-                      className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., 5mg, 10mg, 25mg"
-                    />
-                    {formData.doses.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeDose(index)}
-                        className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  {formData.doses.map((dose, index) => (
+                    <div key={index} className="flex gap-3">
+                      <input
+                        type="text"
+                        value={dose}
+                        onChange={(e) => handleDoseChange(index, e.target.value)}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="e.g., 5mg, 10mg, 25mg"
+                      />
+                      {formData.doses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeDose(index)}
+                          className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
                 <button
                   type="button"
                   onClick={addDose}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
-                  + Add Another Dose
+                  <Plus className="w-4 h-4" />
+                  Add Another Dose
                 </button>
+                <p className="text-xs text-gray-500">Add all available strengths for this medication</p>
               </div>
 
               {/* Frequencies */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Frequency Options *
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-900">
+                  Frequency Options <span className="text-red-500">*</span>
                 </label>
-                {formData.frequencies.map((frequency, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={frequency}
-                      onChange={(e) => handleFrequencyChange(index, e.target.value)}
-                      className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., Once daily, Twice daily, As needed"
-                    />
-                    {formData.frequencies.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeFrequency(index)}
-                        className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  {formData.frequencies.map((frequency, index) => (
+                    <div key={index} className="flex gap-3">
+                      <input
+                        type="text"
+                        value={frequency}
+                        onChange={(e) => handleFrequencyChange(index, e.target.value)}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="e.g., Once daily, Twice daily, As needed"
+                      />
+                      {formData.frequencies.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeFrequency(index)}
+                          className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
                 <button
                   type="button"
                   onClick={addFrequency}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
-                  + Add Another Frequency
+                  <Plus className="w-4 h-4" />
+                  Add Another Frequency
                 </button>
+                <p className="text-xs text-gray-500">Add common dosing frequencies for this medication</p>
               </div>
 
-              {/* Used For */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Used For
-                </label>
-                <textarea
-                  value={formData.usedFor}
-                  onChange={(e) => setFormData({ ...formData, usedFor: e.target.value })}
-                  rows={3}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="What conditions or symptoms is this medication used to treat?"
-                />
-              </div>
+              {/* Two-column layout for Used For and Side Effects */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Used For */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-900">
+                    Used For
+                  </label>
+                  <textarea
+                    value={formData.usedFor}
+                    onChange={(e) => setFormData({ ...formData, usedFor: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                    placeholder="What conditions or symptoms is this medication used to treat?"
+                  />
+                  <p className="text-xs text-gray-500">Describe the primary therapeutic uses</p>
+                </div>
 
-              {/* Potential Side Effects */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Potential Side Effects
-                </label>
-                <textarea
-                  value={formData.potentialSideEffects}
-                  onChange={(e) => setFormData({ ...formData, potentialSideEffects: e.target.value })}
-                  rows={3}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="List common side effects or adverse reactions"
-                />
+                {/* Potential Side Effects */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-900">
+                    Potential Side Effects
+                  </label>
+                  <textarea
+                    value={formData.potentialSideEffects}
+                    onChange={(e) => setFormData({ ...formData, potentialSideEffects: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                    placeholder="List common side effects or adverse reactions"
+                  />
+                  <p className="text-xs text-gray-500">Include most common adverse reactions</p>
+                </div>
               </div>
 
               {/* Description with AI Generate */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-semibold text-gray-900">
+                    Professional Description
                   </label>
                   <button
                     type="button"
                     onClick={handleAIGenerate}
-                    disabled={isGeneratingDescription || !formData.name || !formData.usedFor}
-                    className="flex items-center gap-1 px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 text-sm"
+                    disabled={isGeneratingDescription || !formData.name}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm font-medium transition-colors"
                   >
-                    <Sparkles className="w-3 h-3" />
+                    <Sparkles className="w-4 h-4" />
                     {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
                   </button>
                 </div>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Professional description for care managers (optional)"
+                  rows={5}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                  placeholder="Professional clinical description for care managers and healthcare staff (optional)"
                 />
+                <p className="text-xs text-gray-500">Use AI to generate professional medical descriptions or write your own</p>
               </div>
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-3 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {editingMedication ? 'Update Medication' : 'Create Medication'}
-                </button>
+              <div className="flex items-center justify-between pt-8 border-t border-gray-200">
+                <p className="text-sm text-gray-500">
+                  Fields marked with <span className="text-red-500">*</span> are required
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
+                  >
+                    {editingMedication ? (
+                      <>
+                        <Edit2 className="w-4 h-4" />
+                        Update Medication
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        Create Medication
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
