@@ -33,7 +33,7 @@ The description should be:
 Provide only the description text, no additional formatting or explanations.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo", // Using GPT-3.5-turbo for cost efficiency as requested by user
       messages: [
         {
           role: "system",

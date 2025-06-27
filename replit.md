@@ -199,3 +199,4 @@ This is a client management application with authentication, assessment modules,
   - Button activates only when diagnosis name and category are provided
   - Enhanced error messages for quota exceeded and API key issues
   - Feature ready for production use when valid OpenAI API key with quota is provided
+  - Updated to use GPT-3.5-turbo model for cost efficiency per user preference
