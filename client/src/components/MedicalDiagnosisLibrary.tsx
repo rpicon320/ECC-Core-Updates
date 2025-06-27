@@ -238,13 +238,8 @@ export default function MedicalDiagnosisLibrary() {
     }
 
     try {
-      // Generate a simple code if not provided
-      const generateCode = (name: string) => {
-        return name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || 'CUSTOM'
-      }
-
       const diagnosisData: Omit<MedicalDiagnosis, 'id'> = {
-        code: selectedDiagnosis?.code || generateCode(formData.name),
+        code: selectedDiagnosis?.code || '',
         name: formData.name.trim(),  
         category: formData.category,
         description: formData.description.trim(),
@@ -542,7 +537,7 @@ export default function MedicalDiagnosisLibrary() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Code & Name
+                      Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Category
@@ -559,16 +554,7 @@ export default function MedicalDiagnosisLibrary() {
                   {filteredDiagnoses.map((diagnosis) => (
                     <tr key={diagnosis.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{diagnosis.code}</div>
-                          <div className="text-sm text-gray-600">{diagnosis.name}</div>
-                          {diagnosis.commonSymptoms && diagnosis.commonSymptoms.length > 0 && (
-                            <div className="mt-1 text-xs text-blue-600">
-                              Symptoms: {diagnosis.commonSymptoms.slice(0, 2).join(', ')}
-                              {diagnosis.commonSymptoms.length > 2 && '...'}
-                            </div>
-                          )}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{diagnosis.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -580,12 +566,6 @@ export default function MedicalDiagnosisLibrary() {
                         <div className="text-sm text-gray-600 max-w-xs truncate">
                           {diagnosis.description || 'No description provided'}
                         </div>
-                        {diagnosis.riskFactors && diagnosis.riskFactors.length > 0 && (
-                          <div className="mt-1 text-xs text-orange-600">
-                            Risk factors: {diagnosis.riskFactors.slice(0, 2).join(', ')}
-                            {diagnosis.riskFactors.length > 2 && '...'}
-                          </div>
-                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
