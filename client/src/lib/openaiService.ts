@@ -21,14 +21,14 @@ export const generateDiagnosisDescription = async (
   request: DiagnosisDescriptionRequest
 ): Promise<DiagnosisDescriptionResponse> => {
   try {
-    const prompt = `Generate a professional, clinical description for the medical diagnosis "${request.name}" in the category "${request.category}". 
+    const prompt = `Create a short, brief description for the medical diagnosis "${request.name}" in the category "${request.category}" that explains to patients and families what this condition means.
 
 The description should be:
-- Concise but informative (2-3 sentences)
-- Written in professional medical language
-- Suitable for healthcare providers
-- Include key clinical features or characteristics
-- Avoid overly technical jargon that would confuse general users
+- Simple and clear (30-60 words)
+- Written in everyday language that patients can understand
+- Explains what this diagnosis means for the patient
+- Avoids medical jargon and technical terms
+- Focuses on what the patient needs to know about their condition
 
 Provide only the description text, no additional formatting or explanations.`;
 
@@ -37,7 +37,7 @@ Provide only the description text, no additional formatting or explanations.`;
       messages: [
         {
           role: "system",
-          content: "You are a medical expert assistant that generates accurate, professional clinical descriptions for medical diagnoses. Provide clear, concise descriptions suitable for healthcare documentation."
+          content: "You are a medical expert assistant that creates patient-friendly explanations of medical diagnoses. Write clear, simple descriptions that help patients and families understand their health conditions without using complicated medical terms."
         },
         {
           role: "user",
