@@ -1,0 +1,285 @@
+Essential hypertension
+Type 2 diabetes mellitus without complications
+Hyperlipidemia, unspecified
+Chronic kidney disease, unspecified
+Chronic systolic congestive heart failure
+Chronic bronchitis (COPD)
+Asthma, unspecified (adult)
+Osteoporosis, unspecified
+Alzheimer’s disease, unspecified
+Atrial fibrillation, unspecified
+Congestive heart failure, unspecified
+Dementia, unspecified
+COPD, unspecified
+Abdominal pain, unspecified
+Shortness of breath, unspecified
+Fatigue, unspecified
+Malaise
+Memory loss
+Chest pain, unspecified
+Dizziness
+Backache, unspecified
+Cough, unspecified
+Fever, unspecified
+Hematuria, unspecified
+Urinary tract infection
+Urinary incontinence, unspecified
+Syncope and collapse
+Abnormal weight loss
+Abnormal weight gain
+Edema
+Nausea and vomiting
+Anxiety, unspecified
+Depression, unspecified
+Seizures, unspecified
+Myalgia
+Myositis, unspecified
+Osteomyelitis, unspecified
+Rheumatoid arthritis, unspecified
+Systemic lupus erythematosus
+Acute bronchitis
+Emphysema, unspecified
+Abnormal liver enzymes
+Cirrhosis of liver without alcohol
+Chronic viral hepatitis C
+Viral hepatitis, unspecified
+Parkinson’s disease
+Peripheral artery disease
+Stroke
+Transient ischemic attack (TIA)
+Age-related macular degeneration
+Cataracts
+Glaucoma
+Hearing loss, unspecified
+Tinnitus
+Vertigo, unspecified
+Gastroesophageal reflux disease (GERD)
+Peptic ulcer disease
+Diverticulosis
+Diverticulitis
+Colorectal cancer
+Breast cancer
+Prostate cancer
+Bladder cancer
+Lung cancer
+Ovarian cancer
+Endometrial cancer
+Skin cancer
+Melanoma
+Basal cell carcinoma
+Squamous cell carcinoma
+Psoriasis
+Eczema
+Chronic sinusitis
+Allergic rhinitis
+Seasonal allergies
+Chronic pancreatitis
+Gallbladder disease (cholelithiasis)
+Iron-deficiency anemia
+Vitamin B12 deficiency anemia
+Obesity
+Metabolic syndrome
+Hypothyroidism
+Hyperthyroidism
+Benign prostatic hyperplasia (BPH)
+Erectile dysfunction
+Sexual dysfunction (female)
+Chronic prostatitis
+Overactive bladder
+Stress urinary incontinence
+Urge urinary incontinence
+Mixed urinary incontinence
+Constipation, chronic
+Irritable bowel syndrome (IBS)
+Chronic low back pain
+Lumbar spinal stenosis
+Degenerative disc disease
+Peripheral neuropathy
+Carpal tunnel syndrome
+Fibromyalgia
+Osteoarthritis (generalized)
+Knee osteoarthritis
+Hip osteoarthritis
+Shoulder osteoarthritis
+Hand osteoarthritis
+Rotator cuff syndrome
+Frozen shoulder
+Vertebral compression fracture
+Osteoporotic fracture, history
+Gout
+Kidney stones
+Recurrent urinary tract infection
+Cellulitis, recurrent
+Shingles (herpes zoster)
+Influenza, seasonal
+Pneumonia, recurrent
+Sleep apnea
+Insomnia
+Restless leg syndrome
+Essential tremor
+Migraine headaches
+Tension headaches
+Cluster headaches
+Bell’s palsy
+Trigeminal neuralgia
+Multiple sclerosis
+Spinal cord injury
+Normal pressure hydrocephalus
+Peripheral edema
+Varicose veins
+Deep vein thrombosis, history
+Pulmonary embolism, history
+Sleep-related leg cramps
+Hypoglycemia
+Hyperglycemia
+Diabetic neuropathy
+Diabetic retinopathy
+Dry eye syndrome
+Corneal abrasion
+Conjunctivitis
+Meniere’s disease
+Otitis media
+Otitis externa
+Sinus headache
+Nasal polyps
+Dental abscess
+Periodontitis
+Gingivitis
+Tooth loss
+Esophageal stricture
+Barrett’s esophagus
+Hiatal hernia
+Celiac disease
+Lactose intolerance
+Crohn’s disease
+Ulcerative colitis
+Chronic liver disease (non-alcoholic fatty)
+Fatty liver disease
+Ascites
+Portal hypertension
+Renal insufficiency
+Interstitial cystitis
+Prostate enlargement
+Pelvic organ prolapse
+Uterine fibroids
+Endometriosis
+Menopause symptoms
+Hot flashes
+Hypogonadism
+Infertility
+Proteinuria
+Nephrotic syndrome
+Thrombocytopenia
+Leukopenia
+Leukocytosis
+Polycythemia vera
+Multiple myeloma
+Lymphoma
+Leukemia (chronic lymphocytic)
+Leukemia (acute myeloid)
+Panic disorder
+Social anxiety disorder
+Post-traumatic stress disorder (PTSD)
+Obsessive-compulsive disorder (OCD)
+Bipolar disorder
+Schizophrenia
+Delusional disorder
+Alcohol use disorder
+Opioid use disorder
+Tobacco use disorder
+Cannabis use disorder
+Vitamin D deficiency
+Calcium deficiency
+Magnesium deficiency
+Dehydration
+Electrolyte imbalance
+Heat exhaustion
+Hypothermia
+Burn injury, history
+Stevens-Johnson syndrome
+Rosacea
+Alopecia
+Onychomycosis
+Warts
+Herpes simplex infection
+Scabies
+Lice infestation
+Vitiligo
+Melasma
+Skin tags
+Pressure ulcer
+Wound infection
+Chronic pain syndrome
+Frailty
+Falls, recurrent
+Delirium
+Chronic fatigue syndrome
+Bursitis
+Tendonitis
+Lymphedema
+Temporomandibular joint dysfunction (TMJ)
+Epilepsy, unspecified
+Cognitive impairment, mild
+Memory impairment, age-related
+Visual impairment, age-related
+Hearing impairment, age-related
+Malnutrition
+Cachexia
+Sarcoidosis
+Amyloidosis
+Huntington’s disease
+Idiopathic pulmonary fibrosis
+Interstitial lung disease
+Pleurisy
+Bronchiectasis
+Dermatitis
+Seborrheic keratosis
+Actinic keratosis
+Chronic cough
+Bronchospasm
+Hypoxia, chronic
+Respiratory insufficiency
+Pleural effusion
+Kyphosis
+Lordosis
+Scoliosis, adult onset
+Hip fracture, history
+Stroke sequelae
+Neuropathic pain
+Chronic venous insufficiency
+Hemorrhoids
+Anal fissure
+Anal fistula
+Gastroparesis
+Small intestinal bacterial overgrowth
+Gallstone pancreatitis
+Primary biliary cholangitis
+Liver cirrhosis
+Chronic wound
+Calcific tendonitis
+Dupuytren’s contracture
+Ganglion cyst
+Trigger finger
+Myasthenia gravis
+Guillain-Barré syndrome
+Paget’s disease of bone
+Adrenal insufficiency
+Cushing’s syndrome
+Hyperparathyroidism
+Hypoparathyroidism
+Pituitary adenoma
+Adrenal adenoma
+Hyperaldosteronism
+Immunodeficiency disorder, unspecified
+Postherpetic neuralgia
+Polymyalgia rheumatica
+Vasculitis
+Behçet’s disease
+Raynaud’s phenomenon
+Sjögren’s syndrome
+Mixed connective tissue disease
+Ankylosing spondylitis
+Reactive arthritis
+Sarcoid arthritis
+Psoriatic arthritis
+Polycystic kidney disease

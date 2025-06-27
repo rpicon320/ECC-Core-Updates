@@ -1330,3 +1330,262 @@ export const saveCarePlanCategories = async (categories: string[]): Promise<void
     throw error
   }
 }
+
+// ========== Medical Diagnosis Library ==========
+
+export interface MedicalDiagnosis {
+  id?: string
+  code: string
+  name: string
+  category: string
+  description?: string
+  commonSymptoms?: string[]
+  riskFactors?: string[]
+  isActive: boolean
+  createdBy: string
+  createdAt: Date
+  lastModified: Date
+}
+
+export const getMedicalDiagnoses = async (): Promise<MedicalDiagnosis[]> => {
+  try {
+    const diagnosesRef = collection(db, 'medical_diagnoses')
+    const q = query(diagnosesRef, where('isActive', '==', true), orderBy('category'), orderBy('name'))
+    const querySnapshot = await getDocs(q)
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        code: data.code || '',
+        name: data.name || '',
+        category: data.category || '',
+        description: data.description || '',
+        commonSymptoms: data.commonSymptoms || [],
+        riskFactors: data.riskFactors || [],
+        isActive: data.isActive ?? true,
+        createdBy: data.createdBy || '',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        lastModified: data.lastModified?.toDate() || new Date()
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching medical diagnoses:', error)
+    throw error
+  }
+}
+
+export const getMedicalDiagnosisById = async (diagnosisId: string): Promise<MedicalDiagnosis | null> => {
+  try {
+    const docRef = doc(db, 'medical_diagnoses', diagnosisId)
+    const docSnapshot = await getDoc(docRef)
+    
+    if (!docSnapshot.exists()) {
+      return null
+    }
+    
+    const data = docSnapshot.data()
+    return {
+      id: docSnapshot.id,
+      code: data.code || '',
+      name: data.name || '',
+      category: data.category || '',
+      description: data.description || '',
+      commonSymptoms: data.commonSymptoms || [],
+      riskFactors: data.riskFactors || [],
+      isActive: data.isActive ?? true,
+      createdBy: data.createdBy || '',
+      createdAt: data.createdAt?.toDate() || new Date(),
+      lastModified: data.lastModified?.toDate() || new Date()
+    }
+  } catch (error) {
+    console.error('Error fetching medical diagnosis:', error)
+    throw error
+  }
+}
+
+export const createMedicalDiagnosis = async (diagnosisData: Omit<MedicalDiagnosis, 'id'>): Promise<MedicalDiagnosis> => {
+  try {
+    const diagnosesRef = collection(db, 'medical_diagnoses')
+    const docRef = await addDoc(diagnosesRef, {
+      ...diagnosisData,
+      createdAt: Timestamp.now(),
+      lastModified: Timestamp.now()
+    })
+    
+    const diagnosis: MedicalDiagnosis = {
+      id: docRef.id,
+      ...diagnosisData
+    }
+    
+    return diagnosis
+  } catch (error) {
+    console.error('Error creating medical diagnosis:', error)
+    throw error
+  }
+}
+
+export const updateMedicalDiagnosis = async (diagnosisId: string, updates: Partial<MedicalDiagnosis>): Promise<void> => {
+  try {
+    const docRef = doc(db, 'medical_diagnoses', diagnosisId)
+    const updateData = {
+      ...updates,
+      lastModified: Timestamp.now()
+    }
+    delete updateData.id
+    delete updateData.createdAt
+    
+    await updateDoc(docRef, updateData)
+  } catch (error) {
+    console.error('Error updating medical diagnosis:', error)
+    throw error
+  }
+}
+
+export const deleteMedicalDiagnosis = async (diagnosisId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, 'medical_diagnoses', diagnosisId)
+    await updateDoc(docRef, {
+      isActive: false,
+      lastModified: Timestamp.now()
+    })
+  } catch (error) {
+    console.error('Error deleting medical diagnosis:', error)
+    throw error
+  }
+}
+
+export const batchCreateMedicalDiagnoses = async (diagnoses: Omit<MedicalDiagnosis, 'id'>[]): Promise<void> => {
+  try {
+    const batch = writeBatch(db)
+    const diagnosesRef = collection(db, 'medical_diagnoses')
+    
+    diagnoses.forEach(diagnosis => {
+      const docRef = doc(diagnosesRef)
+      batch.set(docRef, {
+        ...diagnosis,
+        createdAt: Timestamp.now(),
+        lastModified: Timestamp.now()
+      })
+    })
+    
+    await batch.commit()
+  } catch (error) {
+    console.error('Error batch creating medical diagnoses:', error)
+    throw error
+  }
+}
+
+export const getMedicalDiagnosisCategories = async (): Promise<string[]> => {
+  try {
+    const diagnosesRef = collection(db, 'medical_diagnoses')
+    const q = query(diagnosesRef, where('isActive', '==', true))
+    const querySnapshot = await getDocs(q)
+    
+    const categories = new Set<string>()
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data()
+      if (data.category) {
+        categories.add(data.category)
+      }
+    })
+    
+    return Array.from(categories).sort()
+  } catch (error) {
+    console.error('Error fetching medical diagnosis categories:', error)
+    throw error
+  }
+}
+
+export const initializeSampleMedicalDiagnoses = async (): Promise<void> => {
+  try {
+    // Check if we already have data
+    const diagnosesRef = collection(db, 'medical_diagnoses')
+    const querySnapshot = await getDocs(query(diagnosesRef, limit(1)))
+    
+    if (!querySnapshot.empty) {
+      return // Data already exists
+    }
+    
+    const sampleDiagnoses: Omit<MedicalDiagnosis, 'id'>[] = [
+      {
+        code: 'I10',
+        name: 'Essential hypertension',
+        category: 'Cardiovascular',
+        description: 'High blood pressure with no known cause',
+        commonSymptoms: ['Often asymptomatic', 'Headaches', 'Dizziness', 'Fatigue'],
+        riskFactors: ['Age', 'Family history', 'Obesity', 'High sodium diet', 'Sedentary lifestyle'],
+        isActive: true,
+        createdBy: 'system',
+        createdAt: new Date(),
+        lastModified: new Date()
+      },
+      {
+        code: 'E11.9',
+        name: 'Type 2 diabetes mellitus without complications',
+        category: 'Endocrine & Metabolic',
+        description: 'Non-insulin dependent diabetes mellitus',
+        commonSymptoms: ['Increased thirst', 'Frequent urination', 'Fatigue', 'Blurred vision', 'Slow healing wounds'],
+        riskFactors: ['Age over 45', 'Overweight', 'Family history', 'Physical inactivity', 'Previous gestational diabetes'],
+        isActive: true,
+        createdBy: 'system',
+        createdAt: new Date(),
+        lastModified: new Date()
+      },
+      {
+        code: 'E78.5',
+        name: 'Hyperlipidemia, unspecified',
+        category: 'Endocrine & Metabolic',
+        description: 'Elevated levels of lipids in the blood',
+        commonSymptoms: ['Usually asymptomatic', 'May cause chest pain if severe', 'Yellowish deposits around eyes'],
+        riskFactors: ['Diet high in saturated fats', 'Lack of exercise', 'Genetics', 'Age', 'Diabetes'],
+        isActive: true,
+        createdBy: 'system',
+        createdAt: new Date(),
+        lastModified: new Date()
+      },
+      {
+        code: 'J44.1',
+        name: 'Chronic obstructive pulmonary disease with acute exacerbation',
+        category: 'Respiratory',
+        description: 'Progressive lung disease with acute worsening of symptoms',
+        commonSymptoms: ['Shortness of breath', 'Chronic cough', 'Sputum production', 'Wheezing'],
+        riskFactors: ['Smoking', 'Air pollution exposure', 'Occupational dust exposure', 'Age', 'Alpha-1 deficiency'],
+        isActive: true,
+        createdBy: 'system',
+        createdAt: new Date(),
+        lastModified: new Date()
+      },
+      {
+        code: 'F32.9',
+        name: 'Major depressive disorder, single episode, unspecified',
+        category: 'Neurological & Mental Health',
+        description: 'Single episode of major depression without specified severity',
+        commonSymptoms: ['Persistent sadness', 'Loss of interest', 'Fatigue', 'Sleep disturbances', 'Appetite changes'],
+        riskFactors: ['Family history', 'Trauma', 'Chronic illness', 'Substance abuse', 'Social isolation'],
+        isActive: true,
+        createdBy: 'system',
+        createdAt: new Date(),
+        lastModified: new Date()
+      },
+      {
+        code: 'M79.2',
+        name: 'Neuralgia and neuritis, unspecified',
+        category: 'Musculoskeletal',
+        description: 'Nerve pain and inflammation of unspecified cause',
+        commonSymptoms: ['Sharp shooting pain', 'Burning sensation', 'Tingling', 'Numbness', 'Muscle weakness'],
+        riskFactors: ['Age', 'Diabetes', 'Previous injury', 'Infection', 'Autoimmune conditions'],
+        isActive: true,
+        createdBy: 'system',
+        createdAt: new Date(),
+        lastModified: new Date()
+      }
+    ]
+    
+    await batchCreateMedicalDiagnoses(sampleDiagnoses)
+    console.log('Sample medical diagnoses initialized')
+  } catch (error) {
+    console.error('Error initializing sample medical diagnoses:', error)
+    throw error
+  }
+}
