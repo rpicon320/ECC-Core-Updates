@@ -41,8 +41,11 @@ export default function MedicalDiagnosisLibrary() {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<MedicalDiagnosis | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [showCsvUpload, setShowCsvUpload] = useState(false)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [editingCategory, setEditingCategory] = useState<string | null>(null)
+  const [editCategoryName, setEditCategoryName] = useState('')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -112,6 +115,68 @@ export default function MedicalDiagnosisLibrary() {
     } catch (err) {
       setError('Failed to create category')
       console.error('Error creating category:', err)
+    }
+  }
+
+  const handleEditCategory = async (oldName: string, newName: string) => {
+    if (!newName.trim()) {
+      setError('Category name is required')
+      return
+    }
+
+    if (newName.trim() === oldName) {
+      setEditingCategory(null)
+      setEditCategoryName('')
+      return
+    }
+
+    if (categories.includes(newName.trim())) {
+      setError('Category already exists')
+      return
+    }
+
+    try {
+      // Update category in local array
+      const updatedCategories = categories.map(cat => cat === oldName ? newName.trim() : cat).sort()
+      setCategories(updatedCategories)
+      
+      // Update any diagnoses that use this category
+      const updatedDiagnoses = diagnoses.map(diagnosis => 
+        diagnosis.category === oldName 
+          ? { ...diagnosis, category: newName.trim() }
+          : diagnosis
+      )
+      setDiagnoses(updatedDiagnoses)
+      
+      setEditingCategory(null)
+      setEditCategoryName('')
+      setSuccess(`Category renamed from "${oldName}" to "${newName.trim()}"`)
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError('Failed to update category')
+      console.error('Error updating category:', err)
+    }
+  }
+
+  const handleDeleteCategory = async (categoryName: string) => {
+    try {
+      // Check if any diagnoses use this category
+      const diagnosesUsingCategory = diagnoses.filter(d => d.category === categoryName)
+      
+      if (diagnosesUsingCategory.length > 0) {
+        setError(`Cannot delete category "${categoryName}" because it is used by ${diagnosesUsingCategory.length} diagnosis(es)`)
+        return
+      }
+
+      // Remove category from local array
+      const updatedCategories = categories.filter(cat => cat !== categoryName)
+      setCategories(updatedCategories)
+      
+      setSuccess(`Category "${categoryName}" deleted successfully`)
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError('Failed to delete category')
+      console.error('Error deleting category:', err)
     }
   }
 
@@ -271,11 +336,11 @@ export default function MedicalDiagnosisLibrary() {
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={() => setShowCategoryForm(true)}
+            onClick={() => setShowCategoryManager(true)}
             className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Category
+            <Tag className="h-4 w-4 mr-2" />
+            Manage Categories
           </button>
           <button
             onClick={() => setShowCsvUpload(true)}
@@ -552,17 +617,20 @@ export default function MedicalDiagnosisLibrary() {
         </div>
       )}
 
-      {/* Create Category Modal */}
-      {showCategoryForm && (
+      {/* Category Manager Modal */}
+      {showCategoryManager && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Create New Category</h3>
+                <h3 className="text-lg font-medium text-gray-900">Manage Categories</h3>
                 <button
                   onClick={() => {
+                    setShowCategoryManager(false)
                     setShowCategoryForm(false)
                     setNewCategoryName('')
+                    setEditingCategory(null)
+                    setEditCategoryName('')
                     setError('')
                   }}
                   className="text-gray-400 hover:text-gray-600"
@@ -571,42 +639,149 @@ export default function MedicalDiagnosisLibrary() {
                 </button>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter category name"
-                    required
-                    autoFocus
-                  />
-                </div>
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowCategoryForm(true)}
+                  className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Category
+                </button>
+              </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCategoryForm(false)
-                      setNewCategoryName('')
-                      setError('')
-                    }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    Create Category
-                  </button>
+              {/* Add Category Form */}
+              {showCategoryForm && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <form onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }} className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter category name"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        type="submit"
+                        className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                      >
+                        Add Category
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCategoryForm(false)
+                          setNewCategoryName('')
+                        }}
+                        className="px-3 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              )}
+
+              {/* Categories List */}
+              <div className="max-h-96 overflow-y-auto">
+                <div className="space-y-2">
+                  {categories.map((category, index) => {
+                    const diagnosisCount = diagnoses.filter(d => d.category === category).length
+                    return (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          {editingCategory === category ? (
+                            <form 
+                              onSubmit={(e) => { 
+                                e.preventDefault(); 
+                                handleEditCategory(category, editCategoryName); 
+                              }}
+                              className="flex items-center space-x-2"
+                            >
+                              <input
+                                type="text"
+                                value={editCategoryName}
+                                onChange={(e) => setEditCategoryName(e.target.value)}
+                                className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                autoFocus
+                              />
+                              <button
+                                type="submit"
+                                className="p-1 text-green-600 hover:text-green-800"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingCategory(null)
+                                  setEditCategoryName('')
+                                }}
+                                className="p-1 text-gray-600 hover:text-gray-800"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </form>
+                          ) : (
+                            <div className="flex items-center">
+                              <span className="font-medium">{category}</span>
+                              <span className="ml-2 text-sm text-gray-500">
+                                ({diagnosisCount} diagnosis{diagnosisCount !== 1 ? 'es' : ''})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {editingCategory !== category && (
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingCategory(category)
+                                setEditCategoryName(category)
+                              }}
+                              className="p-1 text-blue-600 hover:text-blue-800"
+                              title="Edit category"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(category)}
+                              className="p-1 text-red-600 hover:text-red-800"
+                              title="Delete category"
+                              disabled={diagnosisCount > 0}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowCategoryManager(false)
+                    setShowCategoryForm(false)
+                    setNewCategoryName('')
+                    setEditingCategory(null)
+                    setEditCategoryName('')
+                    setError('')
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         </div>
