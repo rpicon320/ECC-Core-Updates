@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Search, Sparkles } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Plus, Edit2, Trash2, Search, Sparkles, Upload, Download } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   getMedications, 
@@ -21,6 +21,9 @@ export default function MedicationsLibrary() {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadResults, setUploadResults] = useState<{success: number, failed: number, errors: string[]}>({success: 0, failed: 0, errors: []})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -222,6 +225,121 @@ export default function MedicationsLibrary() {
     }
   }
 
+  const handleBulkUpload = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.csv')) {
+      setError('Please upload a CSV file')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    setUploading(true)
+    setUploadResults({success: 0, failed: 0, errors: []})
+
+    try {
+      const text = await file.text()
+      const lines = text.split('\n').filter(line => line.trim())
+      
+      if (lines.length === 0) {
+        setError('CSV file is empty')
+        setTimeout(() => setError(''), 5000)
+        return
+      }
+
+      // Remove header if it exists (check if first line contains "name" or "medication")
+      const startIndex = lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('medication') ? 1 : 0
+      const medicationNames = lines.slice(startIndex).map(line => line.split(',')[0].trim()).filter(name => name)
+
+      if (medicationNames.length === 0) {
+        setError('No valid medication names found in CSV')
+        setTimeout(() => setError(''), 5000)
+        return
+      }
+
+      let successCount = 0
+      let failedCount = 0
+      const errors: string[] = []
+
+      for (const name of medicationNames) {
+        try {
+          if (!name) continue
+
+          // Check if medication already exists
+          const existingMedication = medications.find(med => 
+            med.name.toLowerCase() === name.toLowerCase()
+          )
+
+          if (existingMedication) {
+            failedCount++
+            errors.push(`${name}: Already exists`)
+            continue
+          }
+
+          const medicationData = {
+            name: name,
+            doses: [''], // Empty dose - user can edit later
+            frequencies: [''], // Empty frequency - user can edit later
+            usedFor: '', // Empty - user can edit later
+            potentialSideEffects: '', // Empty - user can edit later
+            description: '', // Empty - user can edit later
+            isActive: true,
+            createdBy: user?.id || user?.email || 'unknown',
+            createdAt: new Date(),
+            lastModified: new Date()
+          }
+
+          await createMedication(medicationData)
+          successCount++
+        } catch (error) {
+          failedCount++
+          errors.push(`${name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+      }
+
+      setUploadResults({
+        success: successCount,
+        failed: failedCount,
+        errors: errors.slice(0, 10) // Show only first 10 errors
+      })
+
+      if (successCount > 0) {
+        setSuccess(`Successfully uploaded ${successCount} medication${successCount === 1 ? '' : 's'}`)
+        setTimeout(() => setSuccess(''), 5000)
+        await loadMedications()
+      }
+
+    } catch (error) {
+      console.error('Error processing CSV:', error)
+      setError('Failed to process CSV file')
+      setTimeout(() => setError(''), 5000)
+    } finally {
+      setUploading(false)
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const downloadTemplate = () => {
+    const csvContent = 'Medication Name\nLisinopril\nMetformin\nAtorvastatin\nLevothyroxine\nOmeprazole'
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'medication_names_template.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
   const filteredMedications = medications.filter(medication =>
     medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     medication.usedFor?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -241,14 +359,40 @@ export default function MedicationsLibrary() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Medications Library</h2>
-        <button
-          onClick={() => openForm()}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Medication
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={downloadTemplate}
+            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Template
+          </button>
+          <button
+            onClick={handleBulkUpload}
+            disabled={uploading}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            {uploading ? 'Uploading...' : 'Bulk Upload'}
+          </button>
+          <button
+            onClick={() => openForm()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Medication
+          </button>
+        </div>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".csv"
+        style={{ display: 'none' }}
+      />
 
       {/* Success/Error Messages */}
       {success && (
@@ -259,6 +403,32 @@ export default function MedicationsLibrary() {
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
+        </div>
+      )}
+
+      {/* Upload Results */}
+      {(uploadResults.success > 0 || uploadResults.failed > 0) && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+          <h3 className="font-medium text-blue-900 mb-2">Upload Results</h3>
+          <div className="text-sm text-blue-800">
+            <p>✅ Successfully uploaded: {uploadResults.success} medication{uploadResults.success === 1 ? '' : 's'}</p>
+            {uploadResults.failed > 0 && (
+              <p>❌ Failed: {uploadResults.failed} medication{uploadResults.failed === 1 ? '' : 's'}</p>
+            )}
+            {uploadResults.errors.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-blue-600">View Error Details</summary>
+                <ul className="mt-1 ml-4 space-y-1">
+                  {uploadResults.errors.map((error, index) => (
+                    <li key={index} className="text-xs text-red-600">• {error}</li>
+                  ))}
+                  {uploadResults.failed > uploadResults.errors.length && (
+                    <li className="text-xs text-gray-600">... and {uploadResults.failed - uploadResults.errors.length} more errors</li>
+                  )}
+                </ul>
+              </details>
+            )}
+          </div>
         </div>
       )}
 
