@@ -276,8 +276,15 @@ export default function MedicalDiagnosisLibrary() {
     }
 
     try {
+      setLoading(true)
       const text = await selectedFile.text()
       const lines = text.split('\n').filter(line => line.trim())
+      
+      if (lines.length < 2) {
+        setError('CSV file must contain at least a header row and one data row')
+        return
+      }
+
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
       
       const requiredHeaders = ['name', 'category']
@@ -288,42 +295,53 @@ export default function MedicalDiagnosisLibrary() {
         return
       }
 
+      const nameIndex = headers.indexOf('name')
+      const categoryIndex = headers.indexOf('category')
+      const descriptionIndex = headers.indexOf('description')
+
       const newDiagnoses: Omit<MedicalDiagnosis, 'id'>[] = []
       
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim())
-        const diagnosisData: any = {}
         
-        headers.forEach((header, index) => {
-          diagnosisData[header] = values[index] || ''
-        })
+        const name = values[nameIndex]
+        const category = values[categoryIndex]
+        const description = descriptionIndex >= 0 ? values[descriptionIndex] : ''
 
-        if (diagnosisData.name && diagnosisData.category) {
-          const diagnosis: Omit<MedicalDiagnosis, 'id'> = {
-            code: diagnosisData.code || '',
-            name: diagnosisData.name,
-            category: diagnosisData.category,
-            description: diagnosisData.description || '',
-            commonSymptoms: diagnosisData.commonsymptoms ? diagnosisData.commonsymptoms.split(';').map((s: string) => s.trim()) : [],
-            riskFactors: diagnosisData.riskfactors ? diagnosisData.riskfactors.split(';').map((s: string) => s.trim()) : [],
-            isActive: true,
-            createdBy: user?.id || 'admin',
-            createdAt: new Date(),
-            lastModified: new Date()
-          }
-          newDiagnoses.push(diagnosis)
+        if (!name || !category) {
+          setError(`Row ${i + 1}: Name and category are required`)
+          return
         }
+
+        const diagnosis: Omit<MedicalDiagnosis, 'id'> = {
+          code: '', // Not used in simplified form
+          name,
+          category,
+          description,
+          commonSymptoms: [], // Not used in simplified form
+          riskFactors: [], // Not used in simplified form
+          isActive: true,
+          createdBy: user?.id || 'admin',
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
+        newDiagnoses.push(diagnosis)
       }
 
+      console.log('Attempting to save diagnoses to Firestore:', newDiagnoses)
       await batchCreateMedicalDiagnoses(newDiagnoses)
+      console.log('Diagnoses saved successfully, reloading...')
       await loadDiagnoses() // Reload the list
       setSuccess(`Imported ${newDiagnoses.length} diagnoses successfully`)
       setShowCsvUpload(false)
       setSelectedFile(null)
       setIsDragOver(false)
     } catch (err) {
-      setError('Failed to import CSV file')
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Failed to import CSV file: ${errorMessage}`)
       console.error('Error importing CSV:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -929,10 +947,17 @@ export default function MedicalDiagnosisLibrary() {
                 </button>
                 <button
                   onClick={handleCsvUpload}
-                  disabled={!selectedFile}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!selectedFile || loading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
                 >
-                  Upload
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload'
+                  )}
                 </button>
               </div>
             </div>
