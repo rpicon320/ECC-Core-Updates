@@ -241,7 +241,7 @@ export default function MedicalDiagnosisLibrary() {
           } else {
             console.error(`Failed to generate description for ${diagnosis.name}:`, result.error)
             // If quota exceeded, stop the process
-            if (result.error?.includes('quota exceeded')) {
+            if (result.error && result.error.includes('quota exceeded')) {
               setError(`Generated ${completed} descriptions before reaching API quota limit. ${diagnosesWithoutDescriptions.length - completed} remaining.`)
               break
             }
@@ -249,8 +249,13 @@ export default function MedicalDiagnosisLibrary() {
 
           // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 500))
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error generating description for ${diagnosis.name}:`, error)
+          // If it's a quota error, stop the process
+          if (error?.message && error.message.includes('quota')) {
+            setError(`Generated ${completed} descriptions before reaching API quota limit. ${diagnosesWithoutDescriptions.length - completed} remaining.`)
+            break
+          }
         }
       }
 
@@ -263,9 +268,17 @@ export default function MedicalDiagnosisLibrary() {
       
       // Reload diagnoses to show the new descriptions
       await loadDiagnoses()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in bulk generation:', error)
-      setError('Failed to generate descriptions. Please try again.')
+      let errorMessage = 'Failed to generate descriptions. Please try again.'
+      
+      if (error?.message && error.message.includes('quota')) {
+        errorMessage = 'OpenAI API quota exceeded. Please check your billing at platform.openai.com'
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
       setTimeout(() => setError(''), 8000)
     } finally {
       setIsGeneratingDescription(false)
