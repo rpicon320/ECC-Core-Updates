@@ -130,6 +130,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk Medication Data Generation
+  app.post("/api/generate-bulk-medication-data", async (req, res) => {
+    try {
+      const { name } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ error: "Medication name is required" });
+      }
+
+      const prompt = `For the medication "${name}", generate comprehensive clinical information in JSON format with the following structure:
+
+      {
+        "doses": [array of common dosage strengths as strings, e.g., "5mg", "10mg", "25mg"],
+        "frequencies": [array of common dosing frequencies as strings, e.g., "Once daily", "Twice daily", "As needed"],
+        "usedFor": "Primary therapeutic use or indication",
+        "potentialSideEffects": "Most common side effects separated by commas"
+      }
+
+      Provide accurate, clinically relevant information for healthcare professionals. Include only the most commonly prescribed doses and frequencies. Keep the usage description concise but informative.
+
+      Return only valid JSON with no additional text.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are a clinical pharmacist providing accurate medication information. Always respond with valid JSON only.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 400,
+        temperature: 0.3,
+        response_format: { type: "json_object" }
+      });
+
+      const content = response.choices[0].message.content?.trim();
+
+      if (!content) {
+        throw new Error("No data generated");
+      }
+
+      let data;
+      try {
+        data = JSON.parse(content);
+      } catch (parseError) {
+        throw new Error("Invalid JSON response from AI");
+      }
+
+      // Validate the response structure
+      if (!data.doses || !data.frequencies || !data.usedFor || !data.potentialSideEffects) {
+        throw new Error("Incomplete medication data generated");
+      }
+
+      res.json({ data });
+    } catch (error: any) {
+      console.error("Error generating bulk medication data:", error);
+      
+      let errorMessage = "Failed to generate medication data";
+      if (error.code === "insufficient_quota") {
+        errorMessage = "OpenAI API quota exceeded. Please check your billing at platform.openai.com";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

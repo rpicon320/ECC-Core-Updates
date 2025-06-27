@@ -1686,64 +1686,44 @@ export const getMedications = async (): Promise<Medication[]> => {
   try {
     const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
     
-    // Try without ordering first to avoid index errors
-    let q
-    try {
-      q = query(medicationsRef, where('isActive', '==', true), orderBy('name'))
-    } catch (indexError) {
-      console.warn('Orderby index not available, fetching without order:', indexError)
-      q = query(medicationsRef, where('isActive', '==', true))
-    }
-    
-    const querySnapshot = await getDocs(q)
+    // First try a simple query without filters to test connectivity
+    console.log('Attempting simple query without filters...')
+    console.log('Collection reference:', COLLECTIONS.MEDICATIONS)
+    console.log('Database instance:', db)
+    const querySnapshot = await getDocs(medicationsRef)
+    console.log('Simple query successful, found', querySnapshot.size, 'documents')
     
     const medications = querySnapshot.docs.map(doc => {
       const data = doc.data()
+      console.log('Processing medication:', data.name, 'isActive:', data.isActive)
       return {
         id: doc.id,
         name: data.name || '',
-        doses: data.doses || [],
-        frequencies: data.frequencies || [],
+        doses: Array.isArray(data.doses) ? data.doses : [],
+        frequencies: Array.isArray(data.frequencies) ? data.frequencies : [],
         usedFor: data.usedFor || '',
         potentialSideEffects: data.potentialSideEffects || '',
         description: data.description || '',
-        isActive: data.isActive ?? true,
+        isActive: data.isActive !== false, // Default to true if undefined
         createdBy: data.createdBy || '',
-        createdAt: data.createdAt?.toDate() || new Date(),
-        lastModified: data.lastModified?.toDate() || new Date()
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        lastModified: data.lastModified?.toDate?.() || new Date()
       } as Medication
     })
     
-    // Sort manually if ordering failed
-    return medications.sort((a, b) => a.name.localeCompare(b.name))
+    // Filter active medications and sort
+    const activeMedications = medications.filter(med => med.isActive)
+    console.log('Filtered active medications:', activeMedications.length)
+    
+    return activeMedications.sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
     console.error('Error fetching medications:', error)
-    
-    // Try to fetch all documents without any filtering as fallback
-    try {
-      const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
-      const querySnapshot = await getDocs(medicationsRef)
-      
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data()
-        return {
-          id: doc.id,
-          name: data.name || '',
-          doses: data.doses || [],
-          frequencies: data.frequencies || [],
-          usedFor: data.usedFor || '',
-          potentialSideEffects: data.potentialSideEffects || '',
-          description: data.description || '',
-          isActive: data.isActive ?? true,
-          createdBy: data.createdBy || '',
-          createdAt: data.createdAt?.toDate() || new Date(),
-          lastModified: data.lastModified?.toDate() || new Date()
-        } as Medication
-      }).filter(med => med.isActive !== false).sort((a, b) => a.name.localeCompare(b.name))
-    } catch (fallbackError) {
-      console.error('Fallback fetch also failed:', fallbackError)
-      return []
-    }
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    })
+    return []
   }
 }
 
@@ -2012,6 +1992,46 @@ export const generateMedicationDescription = async (medicationData: {
     console.error('Error generating medication description:', error)
     
     let errorMessage = 'Failed to generate description'
+    if (error.message.includes('quota') || error.message.includes('insufficient_quota')) {
+      errorMessage = 'OpenAI API quota exceeded. Please check your billing at platform.openai.com'
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    return { success: false, error: errorMessage }
+  }
+}
+
+export const generateBulkMedicationData = async (medicationName: string): Promise<{
+  success: boolean
+  data?: {
+    doses: string[]
+    frequencies: string[]
+    usedFor: string
+    potentialSideEffects: string
+  }
+  error?: string
+}> => {
+  try {
+    const response = await fetch('/api/generate-bulk-medication-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: medicationName }),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to generate medication data')
+    }
+
+    return { success: true, data: result.data }
+  } catch (error: any) {
+    console.error('Error generating bulk medication data:', error)
+    
+    let errorMessage = 'Failed to generate medication data'
     if (error.message.includes('quota') || error.message.includes('insufficient_quota')) {
       errorMessage = 'OpenAI API quota exceeded. Please check your billing at platform.openai.com'
     } else if (error.message) {

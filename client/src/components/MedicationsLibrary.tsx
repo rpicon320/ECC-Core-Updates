@@ -7,6 +7,7 @@ import {
   updateMedication, 
   deleteMedication,
   generateMedicationDescription,
+  generateBulkMedicationData,
   initializeMedicationsDatabase,
   type Medication 
 } from '../lib/firestoreService'
@@ -23,6 +24,9 @@ export default function MedicationsLibrary() {
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadResults, setUploadResults] = useState<{success: number, failed: number, errors: string[]}>({success: 0, failed: 0, errors: []})
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false)
+  const [bulkProgress, setBulkProgress] = useState<{current: number, total: number, currentMedication: string}>({current: 0, total: 0, currentMedication: ''})
+  const [bulkResults, setBulkResults] = useState<{success: number, failed: number, errors: string[]}>({success: 0, failed: 0, errors: []})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
@@ -340,6 +344,109 @@ export default function MedicationsLibrary() {
     window.URL.revokeObjectURL(url)
   }
 
+  const handleBulkGenerate = async () => {
+    if (!user) {
+      setError('You must be logged in to generate medication data')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    // Get medications that need AI generation (those with empty doses, frequencies, or usedFor)
+    const medicationsToGenerate = medications.filter(med => 
+      med.name && (
+        !med.doses?.length || 
+        med.doses.every(d => !d.trim()) ||
+        !med.frequencies?.length || 
+        med.frequencies.every(f => !f.trim()) ||
+        !med.usedFor?.trim()
+      )
+    )
+
+    if (medicationsToGenerate.length === 0) {
+      setError('No medications found that need AI generation')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    const confirmed = window.confirm(
+      `This will generate AI-powered doses, frequencies, and usage information for ${medicationsToGenerate.length} medications. This may take several minutes and use OpenAI API credits. Continue?`
+    )
+
+    if (!confirmed) return
+
+    setIsBulkGenerating(true)
+    setBulkProgress({current: 0, total: medicationsToGenerate.length, currentMedication: ''})
+    setBulkResults({success: 0, failed: 0, errors: []})
+
+    let successCount = 0
+    let failedCount = 0
+    const errors: string[] = []
+
+    try {
+      for (let i = 0; i < medicationsToGenerate.length; i++) {
+        const medication = medicationsToGenerate[i]
+        setBulkProgress({
+          current: i + 1,
+          total: medicationsToGenerate.length,
+          currentMedication: medication.name
+        })
+
+        try {
+          const result = await generateBulkMedicationData(medication.name)
+          
+          if (result.success && result.data) {
+            // Update the medication with generated data
+            const updatedData = {
+              doses: result.data.doses.filter(d => d.trim()),
+              frequencies: result.data.frequencies.filter(f => f.trim()),
+              usedFor: result.data.usedFor || '',
+              potentialSideEffects: result.data.potentialSideEffects || ''
+            }
+
+            await updateMedication(medication.id!, updatedData)
+            successCount++
+          } else {
+            failedCount++
+            errors.push(`${medication.name}: ${result.error || 'Unknown error'}`)
+          }
+        } catch (error) {
+          failedCount++
+          errors.push(`${medication.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+
+        // Small delay to avoid overwhelming the API
+        if (i < medicationsToGenerate.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      }
+
+      setBulkResults({
+        success: successCount,
+        failed: failedCount,
+        errors: errors.slice(0, 10) // Show only first 10 errors
+      })
+
+      if (successCount > 0) {
+        setSuccess(`Successfully generated data for ${successCount} medication${successCount === 1 ? '' : 's'}`)
+        setTimeout(() => setSuccess(''), 5000)
+        await loadMedications()
+      }
+
+      if (failedCount > 0) {
+        setError(`Failed to generate data for ${failedCount} medication${failedCount === 1 ? '' : 's'}. Check the results below for details.`)
+        setTimeout(() => setError(''), 8000)
+      }
+
+    } catch (error) {
+      console.error('Error during bulk generation:', error)
+      setError('Failed to complete bulk generation')
+      setTimeout(() => setError(''), 5000)
+    } finally {
+      setIsBulkGenerating(false)
+      setBulkProgress({current: 0, total: 0, currentMedication: ''})
+    }
+  }
+
   const filteredMedications = medications.filter(medication =>
     medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     medication.usedFor?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -374,6 +481,14 @@ export default function MedicationsLibrary() {
           >
             <Upload className="w-4 h-4" />
             {uploading ? 'Uploading...' : 'Bulk Upload'}
+          </button>
+          <button
+            onClick={handleBulkGenerate}
+            disabled={isBulkGenerating}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-purple-400 flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            {isBulkGenerating ? 'Generating...' : 'Bulk Generate AI'}
           </button>
           <button
             onClick={() => openForm()}
@@ -424,6 +539,52 @@ export default function MedicationsLibrary() {
                   ))}
                   {uploadResults.failed > uploadResults.errors.length && (
                     <li className="text-xs text-gray-600">... and {uploadResults.failed - uploadResults.errors.length} more errors</li>
+                  )}
+                </ul>
+              </details>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Generation Progress */}
+      {isBulkGenerating && (
+        <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded">
+          <h3 className="font-medium text-purple-900 mb-2">AI Generation in Progress</h3>
+          <div className="text-sm text-purple-800">
+            <p>Processing medication {bulkProgress.current} of {bulkProgress.total}</p>
+            <p className="font-medium">Current: {bulkProgress.currentMedication}</p>
+            <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
+              <div 
+                className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+              ></div>
+            </div>
+            <p className="text-xs mt-1 text-purple-600">
+              {Math.round((bulkProgress.current / bulkProgress.total) * 100)}% Complete
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Generation Results */}
+      {(bulkResults.success > 0 || bulkResults.failed > 0) && !isBulkGenerating && (
+        <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded">
+          <h3 className="font-medium text-purple-900 mb-2">AI Generation Results</h3>
+          <div className="text-sm text-purple-800">
+            <p>✅ Successfully generated: {bulkResults.success} medication{bulkResults.success === 1 ? '' : 's'}</p>
+            {bulkResults.failed > 0 && (
+              <p>❌ Failed: {bulkResults.failed} medication{bulkResults.failed === 1 ? '' : 's'}</p>
+            )}
+            {bulkResults.errors.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-purple-600">View Error Details</summary>
+                <ul className="mt-1 ml-4 space-y-1">
+                  {bulkResults.errors.map((error, index) => (
+                    <li key={index} className="text-xs text-red-600">• {error}</li>
+                  ))}
+                  {bulkResults.failed > bulkResults.errors.length && (
+                    <li className="text-xs text-gray-600">... and {bulkResults.failed - bulkResults.errors.length} more errors</li>
                   )}
                 </ul>
               </details>
