@@ -570,15 +570,19 @@ export default function MedicalDiagnosisLibrary() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => openForm(diagnosis)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          className="inline-flex items-center px-2 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded mr-2 transition-colors"
+                          title="Edit diagnosis"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(diagnosis.id!)}
-                          className="text-red-600 hover:text-red-900"
+                          className="inline-flex items-center px-2 py-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
+                          title="Delete diagnosis"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
                         </button>
                       </td>
                     </tr>
