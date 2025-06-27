@@ -98,14 +98,14 @@ export default function MedicalDiagnosisLibrary() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.code.trim() || !formData.name.trim() || !formData.category) {
-      setError('Code, name, and category are required')
+    if (!formData.name.trim() || !formData.category) {
+      setError('Diagnosis name and category are required')
       return
     }
 
     try {
       const diagnosisData: Omit<MedicalDiagnosis, 'id'> = {
-        code: formData.code.trim(),
+        code: formData.code.trim() || '',
         name: formData.name.trim(),  
         category: formData.category,
         description: formData.description.trim(),
@@ -158,7 +158,7 @@ export default function MedicalDiagnosisLibrary() {
       const lines = text.split('\n').filter(line => line.trim())
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
       
-      const requiredHeaders = ['code', 'name', 'category']
+      const requiredHeaders = ['name', 'category']
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h))
       
       if (missingHeaders.length > 0) {
@@ -176,9 +176,9 @@ export default function MedicalDiagnosisLibrary() {
           diagnosisData[header] = values[index] || ''
         })
 
-        if (diagnosisData.code && diagnosisData.name && diagnosisData.category) {
+        if (diagnosisData.name && diagnosisData.category) {
           const diagnosis: Omit<MedicalDiagnosis, 'id'> = {
-            code: diagnosisData.code,
+            code: diagnosisData.code || '',
             name: diagnosisData.name,
             category: diagnosisData.category,
             description: diagnosisData.description || '',
@@ -435,15 +435,14 @@ export default function MedicalDiagnosisLibrary() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Code *
+                    Code
                   </label>
                   <input
                     type="text"
                     value={formData.code}
                     onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., I10, E11.9"
-                    required
+                    placeholder="e.g., I10, E11.9 (optional)"
                   />
                 </div>
 
@@ -591,9 +590,9 @@ export default function MedicalDiagnosisLibrary() {
                   Upload a CSV file with the following required columns:
                 </p>
                 <ul className="text-xs text-gray-500 mb-4 space-y-1">
-                  <li>• <strong>code</strong> - Diagnosis code (required)</li>
                   <li>• <strong>name</strong> - Diagnosis name (required)</li>
                   <li>• <strong>category</strong> - Category name (required)</li>
+                  <li>• <strong>code</strong> - Diagnosis code (optional)</li>
                   <li>• <strong>description</strong> - Brief description (optional)</li>
                   <li>• <strong>commonSymptoms</strong> - Semicolon-separated symptoms (optional)</li>
                   <li>• <strong>riskFactors</strong> - Semicolon-separated risk factors (optional)</li>
