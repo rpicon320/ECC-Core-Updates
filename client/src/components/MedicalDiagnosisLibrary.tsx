@@ -42,12 +42,9 @@ export default function MedicalDiagnosisLibrary() {
   const [showCsvUpload, setShowCsvUpload] = useState(false)
 
   const [formData, setFormData] = useState({
-    code: '',
     name: '',
     category: '',
-    description: '',
-    commonSymptoms: '',
-    riskFactors: ''
+    description: ''
   })
 
   useEffect(() => {
@@ -75,22 +72,16 @@ export default function MedicalDiagnosisLibrary() {
     if (diagnosis) {
       setSelectedDiagnosis(diagnosis)
       setFormData({
-        code: diagnosis.code,
         name: diagnosis.name,
         category: diagnosis.category,
-        description: diagnosis.description || '',
-        commonSymptoms: diagnosis.commonSymptoms?.join(', ') || '',
-        riskFactors: diagnosis.riskFactors?.join(', ') || ''
+        description: diagnosis.description || ''
       })
     } else {
       setSelectedDiagnosis(null)
       setFormData({
-        code: '',
         name: '',
         category: '',
-        description: '',
-        commonSymptoms: '',
-        riskFactors: ''
+        description: ''
       })
     }
     setShowForm(true)
@@ -105,12 +96,12 @@ export default function MedicalDiagnosisLibrary() {
 
     try {
       const diagnosisData: Omit<MedicalDiagnosis, 'id'> = {
-        code: formData.code.trim() || '',
+        code: '',
         name: formData.name.trim(),  
         category: formData.category,
         description: formData.description.trim(),
-        commonSymptoms: formData.commonSymptoms ? formData.commonSymptoms.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
-        riskFactors: formData.riskFactors ? formData.riskFactors.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
+        commonSymptoms: [],
+        riskFactors: [],
         isActive: true,
         createdBy: user?.id || 'admin',
         createdAt: selectedDiagnosis?.createdAt || new Date(),
@@ -433,18 +424,7 @@ export default function MedicalDiagnosisLibrary() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Code
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., I10, E11.9 (optional)"
-                  />
-                </div>
+
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -490,33 +470,7 @@ export default function MedicalDiagnosisLibrary() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Common Symptoms
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.commonSymptoms}
-                    onChange={(e) => setFormData(prev => ({ ...prev, commonSymptoms: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Comma-separated list of symptoms"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Separate multiple symptoms with commas</p>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Risk Factors
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.riskFactors}
-                    onChange={(e) => setFormData(prev => ({ ...prev, riskFactors: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Comma-separated list of risk factors"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Separate multiple risk factors with commas</p>
-                </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
@@ -592,10 +546,7 @@ export default function MedicalDiagnosisLibrary() {
                 <ul className="text-xs text-gray-500 mb-4 space-y-1">
                   <li>• <strong>name</strong> - Diagnosis name (required)</li>
                   <li>• <strong>category</strong> - Category name (required)</li>
-                  <li>• <strong>code</strong> - Diagnosis code (optional)</li>
                   <li>• <strong>description</strong> - Brief description (optional)</li>
-                  <li>• <strong>commonSymptoms</strong> - Semicolon-separated symptoms (optional)</li>
-                  <li>• <strong>riskFactors</strong> - Semicolon-separated risk factors (optional)</li>
                 </ul>
               </div>
 
