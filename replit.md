@@ -200,5 +200,6 @@ This is a client management application with authentication, assessment modules,
   - Enhanced error messages for quota exceeded and API key issues
   - Feature ready for production use when valid OpenAI API key with quota is provided
   - Updated to use GPT-3.5-turbo model for cost efficiency per user preference
-  - Modified AI prompt to generate patient-friendly descriptions explaining what diagnosis means to users
-  - Focus on simple, clear language that helps patients understand their conditions
+  - Modified AI prompt to generate professional clinical descriptions for care managers
+  - Focus on informative, accurate descriptions using medical terminology for healthcare staff
+  - Descriptions help care teams understand diagnoses for patient care planning
