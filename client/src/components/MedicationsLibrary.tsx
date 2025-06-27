@@ -455,8 +455,11 @@ export default function MedicationsLibrary() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading medications...</div>
+        <div className="flex items-center justify-center h-64 animate-in fade-in duration-500">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-gray-500 animate-pulse">Loading medications...</div>
+          </div>
         </div>
       </div>
     )
@@ -469,32 +472,32 @@ export default function MedicationsLibrary() {
         <div className="flex gap-2">
           <button
             onClick={downloadTemplate}
-            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2"
+            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
             Template
           </button>
           <button
             onClick={handleBulkUpload}
             disabled={uploading}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 flex items-center gap-2"
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 disabled:hover:scale-100 disabled:hover:shadow-none"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className={`w-4 h-4 transition-transform duration-200 ${uploading ? 'animate-pulse' : 'group-hover:scale-110'}`} />
             {uploading ? 'Uploading...' : 'Bulk Upload'}
           </button>
           <button
             onClick={handleBulkGenerate}
             disabled={isBulkGenerating}
-            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-purple-400 flex items-center gap-2"
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-purple-400 flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 disabled:hover:scale-100 disabled:hover:shadow-none"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className={`w-4 h-4 transition-transform duration-200 ${isBulkGenerating ? 'animate-spin' : 'group-hover:scale-110'}`} />
             {isBulkGenerating ? 'Generating...' : 'Bulk Generate AI'}
           </button>
           <button
             onClick={() => openForm()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 group"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-90" />
             Add New Medication
           </button>
         </div>
@@ -594,69 +597,81 @@ export default function MedicationsLibrary() {
       )}
 
       {/* Search */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="mb-6 animate-in slide-in-from-top-4 duration-300">
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-all duration-200 group-focus-within:text-blue-500 group-focus-within:scale-110" />
           <input
             type="text"
             placeholder="Search medications by name or usage..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 focus:shadow-lg"
           />
         </div>
       </div>
 
       {/* Medications Table */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="bg-white shadow-md rounded-lg overflow-hidden animate-in slide-in-from-bottom-4 duration-400">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider transition-colors duration-200 hover:text-gray-700">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider transition-colors duration-200 hover:text-gray-700">
                   Doses
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider transition-colors duration-200 hover:text-gray-700">
                   Frequency
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider transition-colors duration-200 hover:text-gray-700">
                   Used For
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider transition-colors duration-200 hover:text-gray-700">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredMedications.map((medication) => (
-                <tr key={medication.id} className="hover:bg-gray-50">
+              {filteredMedications.map((medication, index) => (
+                <tr 
+                  key={medication.id} 
+                  className="hover:bg-gray-50 transition-all duration-200 hover:shadow-sm animate-in slide-in-from-left-4 ease-out"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{medication.name}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {medication.doses.slice(0, 2).map((dose, index) => (
-                        <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">
+                        <span 
+                          key={index} 
+                          className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1 transition-all duration-200 hover:bg-blue-200 hover:scale-105 animate-in fade-in zoom-in-95"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
                           {dose}
                         </span>
                       ))}
                       {medication.doses.length > 2 && (
-                        <span className="text-xs text-gray-500">+{medication.doses.length - 2} more</span>
+                        <span className="text-xs text-gray-500 animate-in fade-in delay-200">+{medication.doses.length - 2} more</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {medication.frequencies.slice(0, 2).map((freq, index) => (
-                        <span key={index} className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1 mb-1">
+                        <span 
+                          key={index} 
+                          className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1 mb-1 transition-all duration-200 hover:bg-green-200 hover:scale-105 animate-in fade-in zoom-in-95"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
                           {freq}
                         </span>
                       ))}
                       {medication.frequencies.length > 2 && (
-                        <span className="text-xs text-gray-500">+{medication.frequencies.length - 2} more</span>
+                        <span className="text-xs text-gray-500 animate-in fade-in delay-200">+{medication.frequencies.length - 2} more</span>
                       )}
                     </div>
                   </td>
@@ -666,18 +681,20 @@ export default function MedicationsLibrary() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => openForm(medication)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-3"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(medication)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => openForm(medication)}
+                        className="text-indigo-600 hover:text-indigo-900 p-2 rounded-lg hover:bg-indigo-50 transition-all duration-200 hover:scale-110 active:scale-95 group"
+                      >
+                        <Edit2 className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(medication)}
+                        className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-95 group"
+                      >
+                        <Trash2 className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -704,8 +721,8 @@ export default function MedicationsLibrary() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 ease-out">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -841,20 +858,7 @@ export default function MedicationsLibrary() {
                   <p className="text-xs text-gray-500">Describe the primary therapeutic uses</p>
                 </div>
 
-                {/* Potential Side Effects */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">
-                    Potential Side Effects
-                  </label>
-                  <textarea
-                    value={formData.potentialSideEffects}
-                    onChange={(e) => setFormData({ ...formData, potentialSideEffects: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                    placeholder="List common side effects or adverse reactions"
-                  />
-                  <p className="text-xs text-gray-500">Include most common adverse reactions</p>
-                </div>
+
               </div>
 
               {/* Description with AI Generate */}
@@ -892,22 +896,22 @@ export default function MedicationsLibrary() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
+                    className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95 flex items-center gap-2 group"
                   >
                     {editingMedication ? (
                       <>
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
                         Update Medication
                       </>
                     ) : (
                       <>
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-90" />
                         Create Medication
                       </>
                     )}

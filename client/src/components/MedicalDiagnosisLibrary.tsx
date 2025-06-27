@@ -556,30 +556,30 @@ export default function MedicalDiagnosisLibrary() {
           <button
             onClick={handleBulkGenerateDescriptions}
             disabled={isGeneratingDescription}
-            className="flex items-center px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 disabled:hover:scale-100 disabled:hover:shadow-none group"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className={`h-4 w-4 mr-2 transition-transform duration-200 ${isGeneratingDescription ? 'animate-spin' : 'group-hover:scale-110'}`} />
             {isGeneratingDescription ? 'Generating...' : 'AI Generate All'}
           </button>
           <button
             onClick={() => setShowCategoryManager(true)}
-            className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+            className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 group"
           >
-            <Tag className="h-4 w-4 mr-2" />
+            <Tag className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:scale-110" />
             Manage Categories
           </button>
           <button
             onClick={() => setShowCsvUpload(true)}
-            className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 group"
           >
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:scale-110" />
             Import CSV
           </button>
           <button
             onClick={() => openForm()}
-            className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 group"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-90" />
             Add Diagnosis
           </button>
         </div>
