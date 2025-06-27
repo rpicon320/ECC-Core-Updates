@@ -91,6 +91,14 @@ const prepareForFirestore = (data: any) => {
     prepared.updated_at = serverTimestamp()
   }
   
+  // Handle medication and other date fields
+  if (prepared.createdAt && prepared.createdAt instanceof Date) {
+    prepared.createdAt = serverTimestamp()
+  }
+  if (prepared.lastModified && prepared.lastModified instanceof Date) {
+    prepared.lastModified = serverTimestamp()
+  }
+  
   return prepared
 }
 
@@ -1677,10 +1685,19 @@ export interface Medication {
 export const getMedications = async (): Promise<Medication[]> => {
   try {
     const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
-    const q = query(medicationsRef, where('isActive', '==', true), orderBy('name'))
+    
+    // Try without ordering first to avoid index errors
+    let q
+    try {
+      q = query(medicationsRef, where('isActive', '==', true), orderBy('name'))
+    } catch (indexError) {
+      console.warn('Orderby index not available, fetching without order:', indexError)
+      q = query(medicationsRef, where('isActive', '==', true))
+    }
+    
     const querySnapshot = await getDocs(q)
     
-    return querySnapshot.docs.map(doc => {
+    const medications = querySnapshot.docs.map(doc => {
       const data = doc.data()
       return {
         id: doc.id,
@@ -1696,9 +1713,37 @@ export const getMedications = async (): Promise<Medication[]> => {
         lastModified: data.lastModified?.toDate() || new Date()
       } as Medication
     })
+    
+    // Sort manually if ordering failed
+    return medications.sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
     console.error('Error fetching medications:', error)
-    return []
+    
+    // Try to fetch all documents without any filtering as fallback
+    try {
+      const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
+      const querySnapshot = await getDocs(medicationsRef)
+      
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          name: data.name || '',
+          doses: data.doses || [],
+          frequencies: data.frequencies || [],
+          usedFor: data.usedFor || '',
+          potentialSideEffects: data.potentialSideEffects || '',
+          description: data.description || '',
+          isActive: data.isActive ?? true,
+          createdBy: data.createdBy || '',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          lastModified: data.lastModified?.toDate() || new Date()
+        } as Medication
+      }).filter(med => med.isActive !== false).sort((a, b) => a.name.localeCompare(b.name))
+    } catch (fallbackError) {
+      console.error('Fallback fetch also failed:', fallbackError)
+      return []
+    }
   }
 }
 
@@ -1733,21 +1778,44 @@ export const getMedicationById = async (medicationId: string): Promise<Medicatio
 
 export const createMedication = async (medicationData: Omit<Medication, 'id'>): Promise<Medication> => {
   try {
+    console.log('Creating medication with data:', medicationData)
     const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
-    const preparedData = prepareForFirestore({
-      ...medicationData,
-      createdAt: serverTimestamp(),
-      lastModified: serverTimestamp()
-    })
     
+    // Use simple timestamps instead of serverTimestamp for now to avoid issues
+    const now = new Date()
+    const preparedData = {
+      name: String(medicationData.name || ''),
+      doses: Array.isArray(medicationData.doses) ? medicationData.doses.filter(d => d) : [],
+      frequencies: Array.isArray(medicationData.frequencies) ? medicationData.frequencies.filter(f => f) : [],
+      usedFor: String(medicationData.usedFor || ''),
+      potentialSideEffects: String(medicationData.potentialSideEffects || ''),
+      description: String(medicationData.description || ''),
+      isActive: Boolean(medicationData.isActive ?? true),
+      createdBy: String(medicationData.createdBy || 'unknown'),
+      createdAt: Timestamp.fromDate(now),
+      lastModified: Timestamp.fromDate(now)
+    }
+    
+    console.log('Prepared data for Firestore:', preparedData)
     const docRef = await addDoc(medicationsRef, preparedData)
+    console.log('Medication created successfully with ID:', docRef.id)
     
     return {
       id: docRef.id,
-      ...medicationData
+      name: medicationData.name,
+      doses: medicationData.doses,
+      frequencies: medicationData.frequencies,
+      usedFor: medicationData.usedFor || '',
+      potentialSideEffects: medicationData.potentialSideEffects || '',
+      description: medicationData.description || '',
+      isActive: medicationData.isActive ?? true,
+      createdBy: medicationData.createdBy,
+      createdAt: now,
+      lastModified: now
     } as Medication
   } catch (error) {
     console.error('Error creating medication:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
     throw error
   }
 }
@@ -1822,7 +1890,19 @@ export const batchCreateMedications = async (medications: Omit<Medication, 'id'>
 export const initializeSampleMedications = async (): Promise<void> => {
   try {
     const medicationsRef = collection(db, COLLECTIONS.MEDICATIONS)
+    
+    // Test basic Firestore connection first
+    try {
+      const testDoc = doc(medicationsRef, 'test')
+      await getDoc(testDoc)
+      console.log('Firestore connection test successful')
+    } catch (testError) {
+      console.error('Firestore connection test failed:', testError)
+      throw new Error('Database connection issue')
+    }
+    
     const existingMedications = await getDocs(medicationsRef)
+    console.log('Existing medications count:', existingMedications.size)
     
     if (existingMedications.empty) {
       const sampleMedications: Omit<Medication, 'id'>[] = [
